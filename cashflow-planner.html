@@ -1604,7 +1604,7 @@ function renderDashboard() {
 
   // Need This Week card
   document.getElementById('dash-need-week').textContent = fmt(bills7Total);
-  document.getElementById('dash-need-week').className = 'stat-value ' + (bills7Total > 0 ? 'red' : 'green');
+  document.getElementById('dash-need-week').className = 'stat-value yellow';
   document.getElementById('dash-need-week-by').textContent = 'by ' + in7.toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
   // Safe to Spend = balance − bills due this week − buffer (no future income)
