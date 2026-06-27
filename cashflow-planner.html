@@ -528,6 +528,9 @@
         <option value="pct">% Used</option>
         <option value="limit">Budget Amount</option>
       </select>
+      <button id="bulk-edit-btn" class="btn btn-ghost btn-sm" onclick="startBulkEdit()">✏️ Bulk Edit</button>
+      <button id="bulk-save-btn" class="btn btn-primary btn-sm" style="display:none" onclick="saveBulkEdit()">Save All</button>
+      <button id="bulk-cancel-btn" class="btn btn-ghost btn-sm" style="display:none" onclick="cancelBulkEdit()">Cancel</button>
     </div>
   </div>
   <div class="section-sub">Set monthly spending limits per category. Progress bars update from your imported transactions.</div>
@@ -887,6 +890,7 @@ function addAccount() {
   const balance = parseFloat(document.getElementById('acc-balance').value) || 0;
   if (!name) return alert('Enter an account name.');
   state.accounts.push({ id: Date.now(), name, type, balance });
+  logActivity('account', `Added account: ${name} (${fmt(balance)})`);
   save();
   document.getElementById('acc-name').value = '';
   document.getElementById('acc-balance').value = '';
@@ -953,6 +957,7 @@ function addBill() {
   }
 
   state.bills.push({ id: Date.now(), name, amount, frequency, day, nextDate, category });
+  logActivity('bill', `Added bill: ${name} (${fmt(amount)})`);
   save();
   document.getElementById('bill-name').value = '';
   document.getElementById('bill-amount').value = '';
@@ -963,6 +968,8 @@ function addBill() {
 }
 
 function deleteBill(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (b) logActivity('bill', `Removed bill: ${b.name}`);
   state.bills = state.bills.filter(x => x.id !== id);
   save(); renderBills(); renderDashboard();
 }
@@ -1003,14 +1010,6 @@ function markBillUnpaid(id) {
   save(); renderBills(); renderDashboard();
 }
 
-// Keep old function name for any remaining callers
-function nextDueDate(day) {
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
-  let d = new Date(y, m, day);
-  if (d <= now) d = new Date(y, m+1, day);
-  return d;
-}
 
 function daysUntil(date) {
   return Math.ceil((date - new Date()) / 86400000);
@@ -1605,42 +1604,14 @@ function renderDashboard() {
   document.getElementById('dash-need-week').className = 'stat-value ' + (bills7Total > 0 ? 'red' : 'green');
   document.getElementById('dash-need-week-by').textContent = 'by ' + in7.toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
-  // Bills due in next 30 days (for Safe-to-Spend formula)
-  const bills30Total = state.bills.map(b => {
-    const d = nextDueDateForBill(b);
-    return { ...b, nextDate: d, paid: isBillPaid(b) };
-  }).filter(b => !b.paid && b.nextDate <= in30).reduce((s, b) => s + b.amount, 0);
-
-  // Income arriving in next 30 days (used in Safe-to-Spend formula)
-  let incomeIn30 = 0;
-  for (const inc of state.income) {
-    let d = parseLocalDateStr(inc.nextDate);
-    let safety = 0;
-    while (d < now && ++safety < 500) {
-      if (inc.frequency === 'weekly') d.setDate(d.getDate()+7);
-      else if (inc.frequency === 'biweekly') d.setDate(d.getDate()+14);
-      else if (inc.frequency === 'semimonthly') d.setDate(d.getDate()+15);
-      else d.setMonth(d.getMonth()+1);
-    }
-    safety = 0;
-    while (d <= in30 && ++safety < 500) {
-      incomeIn30 += inc.amount;
-      if (inc.frequency === 'weekly') d.setDate(d.getDate()+7);
-      else if (inc.frequency === 'biweekly') d.setDate(d.getDate()+14);
-      else if (inc.frequency === 'semimonthly') d.setDate(d.getDate()+15);
-      else d.setMonth(d.getMonth()+1);
-    }
-  }
-
-  // Safe to Spend = balance + income(30d) − bills(30d) − buffer, floored at $0
+  // Safe to Spend = balance − bills due this week − buffer (no future income)
   const buffer = state.settings.buffer || 200;
-  const safeSpendRaw = totalBalance + incomeIn30 - bills30Total - buffer;
-  const safeSpend = Math.max(0, safeSpendRaw);
+  const safeSpendRaw = totalBalance - bills7Total - buffer;
   const safeEl = document.getElementById('dash-safe-spend');
-  safeEl.textContent = fmt(safeSpend);
-  safeEl.className = 'stat-value ' + (safeSpend === 0 ? 'red' : safeSpend < 500 ? 'yellow' : 'green');
+  safeEl.textContent = fmt(safeSpendRaw);
+  safeEl.className = 'stat-value ' + (safeSpendRaw < 0 ? 'red' : safeSpendRaw < 500 ? 'yellow' : 'green');
   document.getElementById('dash-safe-sub').textContent =
-    `bal + ${fmt(incomeIn30)} income − ${fmt(bills30Total)} bills (30d) − $${buffer} buffer`;
+    `balance − ${fmt(bills7Total)} bills this week − $${buffer} buffer`;
 
   // Spent this month
   const thisMonth = now.getMonth(), thisYear = now.getFullYear();
@@ -1700,11 +1671,11 @@ function renderDashboard() {
   // Alert — use safeSpendRaw so we still warn when balance is actually short
   const alertEl = document.getElementById('dash-alert');
   if (safeSpendRaw < 0) {
-    alertEl.innerHTML = `<div class="alert" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5">🚨 <strong>Warning:</strong> Even with ${fmt(incomeIn30)} expected income, you're ${fmt(Math.abs(safeSpendRaw))} short of covering ${fmt(bills30Total)} in 30-day bills plus the $${buffer} buffer.</div>`;
+    alertEl.innerHTML = `<div class="alert" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5">🚨 <strong>Warning:</strong> You're ${fmt(Math.abs(safeSpendRaw))} short after this week's bills and the $${buffer} buffer.</div>`;
   } else if (safeSpendRaw < 300) {
-    alertEl.innerHTML = `<div class="alert alert-info">⚠️ <strong>Heads up:</strong> After 30-day bills and buffer, you'll have ${fmt(safeSpend)} left. Spend carefully.</div>`;
+    alertEl.innerHTML = `<div class="alert alert-info">⚠️ <strong>Heads up:</strong> Only ${fmt(safeSpendRaw)} safe to spend after this week's bills. Spend carefully.</div>`;
   } else {
-    alertEl.innerHTML = `<div class="alert alert-success">✅ You're in good shape! Safe to spend: <strong>${fmt(safeSpend)}</strong> (balance + ${fmt(incomeIn30)} income − ${fmt(bills30Total)} bills (30d) − $${buffer} buffer).</div>`;
+    alertEl.innerHTML = `<div class="alert alert-success">✅ You're in good shape! Safe to spend: <strong>${fmt(safeSpendRaw)}</strong> (balance − ${fmt(bills7Total)} bills this week − $${buffer} buffer).</div>`;
   }
 }
 
@@ -1761,14 +1732,14 @@ function renderForecast() {
 
   const eventsByDay = {};
   for (const e of events) {
-    const key = e.date.toISOString().split('T')[0];
+    const key = dateToStr(e.date);
     if (!eventsByDay[key]) eventsByDay[key] = [];
     eventsByDay[key].push(e);
   }
 
   for (let i = 0; i <= days; i++) {
     const d = new Date(now); d.setDate(d.getDate()+i);
-    const key = d.toISOString().split('T')[0];
+    const key = dateToStr(d);
     if (eventsByDay[key]) {
       running += eventsByDay[key].reduce((s,e) => s+e.amount, 0);
     }
@@ -1859,6 +1830,7 @@ function setBudget() {
   const amt = parseFloat(document.getElementById('budget-amount').value);
   if (!amt || amt <= 0) return alert('Enter a valid amount.');
   state.budgets[cat] = amt;
+  logActivity('budget', `Set ${cat} budget to ${fmt(amt)}`);
   save();
   document.getElementById('budget-amount').value = '';
   renderBudgets();
@@ -1889,19 +1861,6 @@ function saveBudgetInline(cat) {
   save(); renderBudgets();
 }
 
-function loadRecommendedBudgets() {
-  const recommended = {
-    Housing: 4500, Food: 400, Groceries: 400, Transportation: 1100,
-    Subscriptions: 150, Utilities: 400, 'Personal Care': 200,
-    Health: 100, Pets: 150, Baby: 200, Shopping: 200, Entertainment: 100
-  };
-  const existing = Object.keys(state.budgets);
-  if (existing.length > 0) {
-    if (!confirm('This will overwrite your existing budgets. Continue?')) return;
-  }
-  Object.assign(state.budgets, recommended);
-  save(); renderBudgets();
-}
 
 let budgetBulkMode = false;
 
