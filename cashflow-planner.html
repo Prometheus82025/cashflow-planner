@@ -1691,7 +1691,8 @@ function generateForecastEvents() {
   // Bills
   for (const b of state.bills) {
     let d = nextDueDateForBill(b);
-    while (d <= end) {
+    let safety = 0;
+    while (d <= end && safety++ < 500) {
       events.push({ date: new Date(d), label: b.name, type: 'bill', amount: -b.amount, category: b.category });
       const freq = b.frequency;
       if (freq === 'weekly') {
