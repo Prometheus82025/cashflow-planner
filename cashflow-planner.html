@@ -1621,7 +1621,10 @@ function renderDashboard() {
   });
   const spentMonth = monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer').reduce((s,t) => s + Math.abs(t.amount), 0);
   const incomeMonth = monthTx.filter(t => t.amount > 0).reduce((s,t) => s + t.amount, 0);
-  document.getElementById('dash-spent').textContent = fmt(spentMonth);
+  const totalMonthlyBills = state.bills.reduce((s,b) => s + b.amount, 0);
+  const spentEl = document.getElementById('dash-spent');
+  spentEl.textContent = fmt(spentMonth);
+  spentEl.className = 'stat-value ' + (spentMonth > totalMonthlyBills ? 'red' : spentMonth >= totalMonthlyBills * 0.8 ? 'yellow' : 'green');
   document.getElementById('dash-income-month').textContent = `${fmt(incomeMonth)} income logged`;
 
   // Upcoming bills list
