@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Flow Planner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3248;
+    --accent: #6366f1;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* NAV */
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; align-items: center; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-brand { font-weight: 700; font-size: 18px; color: var(--accent); padding: 16px 16px 16px 0; margin-right: 12px; border-right: 1px solid var(--border); white-space: nowrap; flex-shrink: 0; }
+  .nav-tab { padding: 16px 12px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; font-size: 14px; font-weight: 500; transition: all .2s; white-space: nowrap; flex-shrink: 0; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* LAYOUT */
+  .page { display: none; padding: 24px 20px; max-width: 1200px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .section-gap { margin-bottom: 20px; }
+
+  /* STAT CARDS */
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .stat-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+  .yellow { color: var(--yellow); }
+  .accent { color: var(--accent); }
+
+  /* UPCOMING BILLS */
+  .bill-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .bill-item:last-child { border-bottom: none; }
+  .bill-name { font-size: 14px; font-weight: 500; }
+  .bill-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .bill-amount { font-size: 16px; font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-red { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge-yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
+  .badge-green { background: rgba(34,197,94,.15); color: var(--green); }
+
+  /* FORMS */
+  .form-row { display: grid; gap: 12px; margin-bottom: 16px; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  input:not([type="checkbox"]), select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; }
+  input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  select option { background: var(--surface2); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #5254cc; }
+  .btn-danger { background: rgba(239,68,68,.15); color: var(--red); }
+  .btn-danger:hover { background: rgba(239,68,68,.3); }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); }
+  td { padding: 11px 14px; border-bottom: 1px solid rgba(46,50,72,.5); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(99,102,241,.04); }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .table-header h3 { font-size: 15px; font-weight: 600; }
+
+  /* CATEGORIES */
+  .cat-badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+
+  /* UPLOAD ZONE */
+  .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px; text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 20px; }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: rgba(99,102,241,.05); }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-zone p { color: var(--muted); font-size: 14px; }
+  .upload-zone strong { color: var(--text); }
+  #csv-file-input { display: none; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px; color: var(--muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+  /* PROGRESS */
+  .progress-bar { background: var(--surface2); border-radius: 999px; height: 8px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 999px; transition: width .3s; }
+
+  /* ALERT */
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+  .alert-info { background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.3); color: #a5b4fc; }
+  .alert-success { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); color: #86efac; }
+
+  /* SECTION TITLES */
+  .section-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .section-sub { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+
+  /* TOGGLE */
+  .type-toggle { display: flex; background: var(--surface2); border-radius: 8px; padding: 3px; gap: 3px; width: fit-content; margin-bottom: 20px; }
+  .type-toggle button { padding: 7px 16px; border-radius: 6px; border: none; background: none; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .type-toggle button.active { background: var(--accent); color: #fff; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 500px; }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .grid-5 { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .grid-4, .grid-5 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .form-row.cols-3, .form-row.cols-4 { grid-template-columns: 1fr 1fr; }
+    .page { padding: 16px 12px; }
+    .stat-value { font-size: 22px; }
+    .table-header { flex-wrap: wrap; gap: 10px; }
+    .section-title { font-size: 18px; }
+  }
+  @media (max-width: 500px) {
+    .grid-4, .grid-5, .grid-2 { grid-template-columns: 1fr; }
+    .form-row.cols-2 { grid-template-columns: 1fr; }
+    .page { padding: 12px 10px; }
+    .stat-value { font-size: 20px; }
+    .stat-card { padding: 14px; }
+    .card { padding: 14px; }
+    .nav-brand { font-size: 15px; padding-right: 10px; margin-right: 6px; }
+    .nav-tab { font-size: 13px; padding: 14px 10px; }
+    .table-header { padding: 12px 14px; }
+    .btn { padding: 10px 14px; font-size: 13px; }
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">💸 CashFlow</div>
+  <div class="nav-tab active" data-page="dashboard" onclick="switchPage('dashboard')">Dashboard</div>
+  <div class="nav-tab" data-page="accounts" onclick="switchPage('accounts')">Accounts</div>
+  <div class="nav-tab" data-page="bills" onclick="switchPage('bills')">Bills & Income</div>
+  <div class="nav-tab" data-page="transactions" onclick="switchPage('transactions')">Transactions</div>
+  <div class="nav-tab" data-page="forecast" onclick="switchPage('forecast')">Forecast</div>
+  <div class="nav-tab" data-page="budgets" onclick="switchPage('budgets')">Budgets</div>
+  <div class="nav-tab" data-page="settings" onclick="switchPage('settings')">Settings</div>
+  <button id="undo-btn" onclick="undo()" style="display:none;margin-left:auto;padding:6px 14px;font-size:13px;font-weight:500;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0" title="Undo last action">↩ Undo</button>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="section-title">Dashboard</div>
+  <div class="section-sub" id="dash-date"></div>
+
+  <div class="grid-5 section-gap">
+    <div class="stat-card">
+      <div class="stat-label">Total Balance</div>
+      <div class="stat-value accent" id="dash-balance">$0.00</div>
+      <div class="stat-sub" id="dash-accounts-count">across 0 accounts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Safe to Spend</div>
+      <div class="stat-value" id="dash-safe-spend">$0.00</div>
+      <div class="stat-sub" id="dash-safe-sub">balance minus bills this week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Need This Week</div>
+      <div class="stat-value red" id="dash-need-week">$0.00</div>
+      <div class="stat-sub" id="dash-need-week-by">by —</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bills Due (14d)</div>
+      <div class="stat-value red" id="dash-bills-due">$0.00</div>
+      <div class="stat-sub" id="dash-bills-count">0 bills upcoming</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Spent This Month</div>
+      <div class="stat-value" id="dash-spent">$0.00</div>
+      <div class="stat-sub" id="dash-income-month">$0 income logged</div>
+    </div>
+  </div>
+
+  <div class="grid-2 section-gap">
+    <div class="card">
+      <div class="card-title">⚠️ Upcoming Bills (Next 14 Days)</div>
+      <div id="dash-upcoming-list"><div class="empty"><div class="empty-icon">📋</div>No bills set up yet.<br><small>Add bills in the Bills & Income tab.</small></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Spending by Category (This Month)</div>
+      <div id="dash-categories-list"><div class="empty"><div class="empty-icon">📁</div>No transactions yet.<br><small>Import transactions in the Transactions tab.</small></div></div>
+    </div>
+  </div>
+
+  <div class="card section-gap">
+    <div class="card-title">💡 Spend Alert</div>
+    <div id="dash-alert"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🕐 Recent Activity</div>
+    <div id="dash-activity"><div class="empty" style="padding:12px 0">No activity yet.</div></div>
+  </div>
+</div>
+
+<!-- ACCOUNTS -->
+<div id="page-accounts" class="page">
+  <div class="section-title">Accounts</div>
+  <div class="section-sub">Track your checking, savings, and credit card balances.</div>
+
+  <div class="card section-gap">
+    <div class="card-title">Add Account</div>
+    <div class="form-row cols-4">
+      <div><label>Account Name</label><input id="acc-name" placeholder="Chase Checking" /></div>
+      <div><label>Type</label>
+        <select id="acc-type">
+          <option value="checking">Checking</option>
+          <option value="savings">Savings</option>
+          <option value="credit">Credit Card</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div><label>Current Balance ($)</label><input id="acc-balance" type="number" placeholder="0.00" step="0.01" /></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="addAccount()">+ Add Account</button></div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header"><h3>Your Accounts</h3></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Account</th><th>Type</th><th>Balance</th><th>Action</th></tr></thead>
+      <tbody id="accounts-table-body">
+        <tr><td colspan="4"><div class="empty"><div class="empty-icon">🏦</div>No accounts yet.</div></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- BILLS & INCOME -->
+<div id="page-bills" class="page">
+  <div class="section-title">Bills & Income</div>
+  <div class="section-sub">Set up your recurring bills and income sources so the planner knows what's coming.</div>
+
+  <div class="type-toggle">
+    <button class="active" onclick="switchBillsTab('bills')">💸 Bills</button>
+    <button onclick="switchBillsTab('income')">💰 Income</button>
+  </div>
+
+  <!-- BILLS FORM -->
+  <div id="bills-panel">
+    <div class="card section-gap">
+      <div class="card-title">Add Recurring Bill</div>
+      <div class="form-row cols-4">
+        <div><label>Bill Name</label><input id="bill-name" placeholder="Netflix, Rent, Car Payment…" /></div>
+        <div><label>Amount ($)</label><input id="bill-amount" type="number" placeholder="0.00" step="0.01" /></div>
+        <div><label>Frequency</label>
+          <select id="bill-frequency" onchange="toggleBillDueField()">
+            <option value="monthly">Monthly</option>
+            <option value="biweekly">Every 2 Weeks</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+        <div><label>Category</label>
+          <select id="bill-category">
+            <option value="Housing">Housing</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Subscriptions">Subscriptions</option>
+            <option value="Insurance">Insurance</option>
+            <option value="Loans">Loans</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Food">Food</option>
+            <option value="Groceries">Groceries</option>
+            <option value="Health">Health</option>
+            <option value="Personal Care">Personal Care</option>
+            <option value="Pets">Pets</option>
+            <option value="Baby">Baby</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-4">
+        <div id="bill-day-wrap"><label>Due Day of Month</label><input id="bill-day" type="number" placeholder="1–31" min="1" max="31" /></div>
+        <div id="bill-date-wrap" style="display:none"><label>Next Due Date</label><input id="bill-next-date" type="date" /></div>
+      </div>
+      <button class="btn btn-primary" onclick="addBill()">+ Add Bill</button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header"><h3>Your Recurring Bills</h3><span id="bills-total-label" style="color:var(--muted);font-size:13px;"></span></div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Bill</th><th>Category</th><th>Frequency</th><th>Amount</th><th>Next Due</th><th>Actions</th></tr></thead>
+        <tbody id="bills-table-body">
+          <tr><td colspan="6"><div class="empty"><div class="empty-icon">📄</div>No bills yet.</div></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- INCOME FORM -->
+  <div id="income-panel" style="display:none">
+    <div class="card section-gap">
+      <div class="card-title">Add Income Source</div>
+      <div class="form-row cols-4">
+        <div><label>Source Name</label><input id="inc-name" placeholder="Paycheck, Freelance…" /></div>
+        <div><label>Amount ($)</label><input id="inc-amount" type="number" placeholder="0.00" step="0.01" /></div>
+        <div><label>Frequency</label>
+          <select id="inc-frequency">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Every 2 Weeks</option>
+            <option value="semimonthly">Twice a Month</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div><label>Next Pay Date</label><input id="inc-next" type="date" /></div>
+      </div>
+      <button class="btn btn-primary" onclick="addIncome()">+ Add Income</button>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header"><h3>Income Sources</h3></div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Source</th><th>Frequency</th><th>Amount</th><th>Next Date</th><th>Action</th></tr></thead>
+        <tbody id="income-table-body">
+          <tr><td colspan="5"><div class="empty"><div class="empty-icon">💰</div>No income sources yet.</div></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSACTIONS -->
+<div id="page-transactions" class="page">
+  <div class="section-title">Transactions</div>
+  <div class="section-sub">Import your bank CSV and we'll categorize everything automatically.</div>
+
+  <div class="card section-gap">
+    <div class="card-title">Import Bank CSV</div>
+    <div class="alert alert-info">
+      <strong>Works with:</strong> Chase, Bank of America, Capital One, Wells Fargo, Citi, and most US banks. Download a CSV statement from your bank's website and drop it below.
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Which Account?</label>
+        <select id="import-account">
+          <option value="">— Select account —</option>
+        </select>
+      </div>
+      <div><label>Date Column Format</label>
+        <select id="import-date-format">
+          <option value="auto">Auto-detect</option>
+          <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+          <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+          <option value="MM-DD-YYYY">MM-DD-YYYY</option>
+        </select>
+      </div>
+    </div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('csv-file-input').click()">
+      <div class="upload-icon">📂</div>
+      <p><strong>Click to upload</strong> or drag & drop</p>
+      <p style="margin-top:6px;font-size:12px">CSV · PDF · Image (JPG, PNG) — PDFs and images use AI to extract transactions.</p>
+    </div>
+    <input type="file" id="csv-file-input" accept=".csv,.pdf,image/*" onchange="handleCSVUpload(event)" />
+    <div id="ai-import-status" style="display:none;margin-top:10px;font-size:13px;color:var(--muted);text-align:center"></div>
+  </div>
+
+  <!-- PREVIEW TABLE -->
+  <div id="import-preview" style="display:none" class="section-gap">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Preview — <span id="preview-count">0</span> transactions</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="clearImportPreview()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="confirmImport()">✅ Import All</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;max-height:300px;overflow-y:auto">
+        <table>
+          <thead><tr><th>Include</th><th>Date</th><th>Description</th><th>Amount</th><th>Category</th><th>Note</th></tr></thead>
+          <tbody id="preview-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS TABLE -->
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>All Transactions</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="month-filter" onchange="filterTransactionsByMonth(this.value)">
+          <option value="">All Months</option>
+        </select>
+        <input style="width:200px" placeholder="Search…" oninput="filterTransactions(this.value)" />
+        <select onchange="filterTransactionsByCategory(this.value)" id="cat-filter">
+          <option value="">All Categories</option>
+        </select>
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('Clear all transactions?')) { state.transactions=[]; save(); renderTransactions(); renderDashboard(); }">Clear All</button>
+      </div>
+    </div>
+    <!-- BULK ACTION BAR -->
+    <div id="bulk-tx-bar" style="display:none;align-items:center;gap:10px;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+      <span id="bulk-tx-count" style="font-size:13px;color:var(--muted)">0 selected</span>
+      <select id="bulk-tx-category" style="padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+        <option value="">— Change category to… —</option>
+        <option value="Housing">Housing</option>
+        <option value="Food">Food</option>
+        <option value="Groceries">Groceries</option>
+        <option value="Transportation">Transportation</option>
+        <option value="Utilities">Utilities</option>
+        <option value="Subscriptions">Subscriptions</option>
+        <option value="Insurance">Insurance</option>
+        <option value="Health">Health</option>
+        <option value="Personal Care">Personal Care</option>
+        <option value="Entertainment">Entertainment</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Loans">Loans</option>
+        <option value="Pets">Pets</option>
+        <option value="Baby">Baby</option>
+        <option value="Transfer">Transfer</option>
+        <option value="Income">Income</option>
+        <option value="Other">Other</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="applyBulkCategory()">Apply</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearBulkSelection()">Clear</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th style="width:32px"><input type="checkbox" id="select-all-tx" onchange="toggleSelectAllTx(this.checked)" title="Select all" /></th>
+          <th onclick="sortTx('date')" style="cursor:pointer;user-select:none">Date <span id="sort-ind-date">↓</span></th>
+          <th onclick="sortTx('description')" style="cursor:pointer;user-select:none">Description <span id="sort-ind-description"></span></th>
+          <th>Account</th>
+          <th onclick="sortTx('amount')" style="cursor:pointer;user-select:none">Amount <span id="sort-ind-amount"></span></th>
+          <th onclick="sortTx('category')" style="cursor:pointer;user-select:none">Category <span id="sort-ind-category"></span></th>
+          <th>Actions</th>
+        </tr></thead>
+        <tbody id="transactions-table-body">
+          <tr><td colspan="7"><div class="empty"><div class="empty-icon">📊</div>No transactions yet. Import a CSV above.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FORECAST -->
+<div id="page-forecast" class="page">
+  <div class="section-title">60-Day Cash Flow Forecast</div>
+  <div class="section-sub">See when your balance dips based on upcoming bills and income.</div>
+
+  <div class="grid-3 section-gap">
+    <div class="stat-card">
+      <div class="stat-label">Current Balance</div>
+      <div class="stat-value accent" id="forecast-start-bal">$0.00</div>
+      <div class="stat-sub">today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Projected in 60 Days</div>
+      <div class="stat-value" id="forecast-end-bal">$0.00</div>
+      <div class="stat-sub">after all bills &amp; income</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Net Change</div>
+      <div class="stat-value" id="forecast-net-change">$0.00</div>
+      <div class="stat-sub" id="forecast-net-sub">over 60 days</div>
+    </div>
+  </div>
+
+  <div class="card section-gap">
+    <canvas id="forecast-chart" height="90"></canvas>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header"><h3>Upcoming Cash Flow Events</h3></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Date</th><th>Event</th><th>Type</th><th>Amount</th><th>Projected Balance</th></tr></thead>
+      <tbody id="forecast-table-body">
+        <tr><td colspan="5"><div class="empty">Set up bills, income, and account balances to see your forecast.</div></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- BUDGETS -->
+<div id="page-budgets" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <div class="section-title" style="margin:0">Budgets</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label style="font-size:13px;color:var(--muted)">Sort by</label>
+      <select id="budget-sort" onchange="renderBudgets()" style="width:auto;padding:6px 10px;font-size:13px">
+        <option value="name">Name (A-Z)</option>
+        <option value="spent">Most Spent</option>
+        <option value="remaining">Least Remaining</option>
+        <option value="pct">% Used</option>
+        <option value="limit">Budget Amount</option>
+      </select>
+    </div>
+  </div>
+  <div class="section-sub">Set monthly spending limits per category. Progress bars update from your imported transactions.</div>
+
+  <div class="card section-gap">
+    <div class="card-title">Set Budget Limit</div>
+    <div class="form-row cols-3">
+      <div><label>Category</label>
+        <select id="budget-category">
+          <option value="Housing">Housing</option>
+          <option value="Food">Food</option>
+          <option value="Groceries">Groceries</option>
+          <option value="Transportation">Transportation</option>
+          <option value="Utilities">Utilities</option>
+          <option value="Subscriptions">Subscriptions</option>
+          <option value="Insurance">Insurance</option>
+          <option value="Health">Health</option>
+          <option value="Personal Care">Personal Care</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Loans">Loans</option>
+          <option value="Pets">Pets</option>
+          <option value="Baby">Baby</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div><label>Monthly Limit ($)</label><input id="budget-amount" type="number" placeholder="500" step="1" /></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="setBudget()">Save Limit</button></div>
+    </div>
+  </div>
+
+  <div id="budgets-list"></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="page-settings" class="page">
+  <div class="section-title">Settings</div>
+  <div class="section-sub">Configure your planner preferences and manage your data.</div>
+
+  <div class="card section-gap">
+    <div class="card-title">Safety Buffer</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Amount kept off the Safe to Spend calculation as a cushion.</p>
+    <div class="form-row cols-2">
+      <div><label>Buffer Amount ($)</label><input id="settings-buffer" type="number" step="50" placeholder="200" /></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="saveSettings()">Save</button></div>
+    </div>
+    <div id="settings-saved" style="display:none" class="alert alert-success" style="margin-top:8px">Settings saved.</div>
+  </div>
+
+  <div class="card section-gap">
+    <div class="card-title">🧾 Receipt AI</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Paste your OpenAI API key to enable receipt scanning. The app sends receipt images directly to OpenAI — nothing goes anywhere else.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Get a key at <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--accent)">platform.openai.com/api-keys</a>. Requires a paid OpenAI account (costs a few cents per receipt scan).</p>
+    <div class="form-row cols-2">
+      <div><label>OpenAI API Key</label><input id="openai-api-key" type="password" placeholder="sk-…" autocomplete="off" /></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="saveOpenAIKey()">Save Key</button></div>
+    </div>
+    <div id="openai-key-status" style="font-size:13px;color:var(--muted);margin-top:8px"></div>
+  </div>
+
+  <div class="card section-gap">
+    <div class="card-title">☁️ Cloud Sync</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Sync your data between your Mac and phone with one tap. Uses <a href="https://jsonbin.io" target="_blank" style="color:var(--accent)">JSONBin.io</a> — free, private storage. Your data is locked to your API key.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px">First time: create a free account at jsonbin.io → go to API Keys → copy your Master Key and paste it below.</p>
+    <div class="form-row cols-2">
+      <div><label>Master API Key</label><input id="sync-api-key" type="password" placeholder="$2b$10$…" autocomplete="off" /></div>
+      <div><label>Bin ID <span style="font-weight:400;color:var(--muted)">(auto-filled after first push)</span></label><input id="sync-bin-id" placeholder="auto" /></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="pushToCloud()">⬆️ Push to Cloud</button>
+      <button class="btn btn-ghost" onclick="pullFromCloud()">⬇️ Pull from Cloud</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveSyncConfig()">Save Credentials</button>
+    </div>
+    <div id="sync-status" style="font-size:13px;color:var(--muted)"></div>
+  </div>
+
+  <div class="card section-gap">
+    <div class="card-title">Export / Import Data</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Export a full backup of all your data as JSON, or restore from a previous backup.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="exportData()">⬇️ Export Backup</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('import-json-input').click()">⬆️ Import Backup</button>
+    </div>
+    <input type="file" id="import-json-input" accept=".json" style="display:none" onchange="importData(event)" />
+    <div id="settings-last-imported" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="color:var(--red)">Danger Zone</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Permanently delete all data. This cannot be undone.</p>
+    <button class="btn btn-danger" onclick="if(confirm('Delete ALL data? This cannot be undone.')) { localStorage.removeItem(\'cashflow_v2\'); location.reload(); }">🗑️ Clear All Data</button>
+  </div>
+</div>
+
+<!-- SPLIT RECEIPT MODAL -->
+<div class="modal-overlay" id="split-receipt-modal">
+  <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto">
+    <h3>Split Transaction</h3>
+    <div id="split-tx-info" style="font-size:13px;color:var(--muted);margin-bottom:8px"></div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Transaction Date (from receipt)</label>
+      <input type="date" id="split-date" style="width:180px;padding:6px 10px;font-size:13px" />
+    </div>
+
+    <div id="split-upload-section">
+      <div class="card-title">Upload Receipt</div>
+      <div class="upload-zone" id="receipt-upload-zone" onclick="document.getElementById('receipt-file-input').click()" style="margin-bottom:12px">
+        <div class="upload-icon">🧾</div>
+        <p><strong>Click to upload receipt</strong></p>
+        <p style="font-size:12px;margin-top:4px">JPG, PNG, or PDF</p>
+      </div>
+      <input type="file" id="receipt-file-input" accept="image/*,.pdf" style="display:none" onchange="handleReceiptUpload(event)" />
+      <img id="receipt-preview" style="display:none;max-width:100%;max-height:200px;border-radius:8px;margin-bottom:12px;object-fit:contain" />
+      <button id="analyze-receipt-btn" class="btn btn-primary" style="display:none;width:100%" onclick="analyzeReceipt()">✨ Analyze with AI</button>
+      <div id="analyze-status" style="font-size:13px;color:var(--muted);margin-top:8px;text-align:center"></div>
+    </div>
+
+    <div id="split-lines-section" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-title" style="margin:0">Line Items</div>
+        <button class="btn btn-ghost btn-sm" onclick="addSplitLine()">+ Add Line</button>
+      </div>
+      <div id="split-lines-list"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--muted)">Total: <strong id="split-total" style="color:var(--text)">$0.00</strong> <span id="split-remaining" style="margin-left:8px"></span></span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSplitModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSplit()">Replace with These Splits</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BILL MODAL -->
+<div class="modal-overlay" id="edit-bill-modal">
+  <div class="modal">
+    <h3>Edit Bill</h3>
+    <div class="form-row cols-2">
+      <div><label>Bill Name</label><input id="edit-bill-name" placeholder="Bill name" /></div>
+      <div><label>Amount ($)</label><input id="edit-bill-amount" type="number" step="0.01" placeholder="0.00" /></div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Frequency</label>
+        <select id="edit-bill-frequency" onchange="toggleEditBillDueField()">
+          <option value="monthly">Monthly</option>
+          <option value="biweekly">Every 2 Weeks</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+      <div><label>Category</label>
+        <select id="edit-bill-category">
+          <option value="Housing">Housing</option>
+          <option value="Utilities">Utilities</option>
+          <option value="Subscriptions">Subscriptions</option>
+          <option value="Insurance">Insurance</option>
+          <option value="Loans">Loans</option>
+          <option value="Transportation">Transportation</option>
+          <option value="Food">Food</option>
+          <option value="Groceries">Groceries</option>
+          <option value="Health">Health</option>
+          <option value="Personal Care">Personal Care</option>
+          <option value="Pets">Pets</option>
+          <option value="Baby">Baby</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div id="edit-bill-day-wrap"><label>Due Day of Month</label><input id="edit-bill-day" type="number" min="1" max="31" placeholder="1-31" /></div>
+      <div id="edit-bill-date-wrap" style="display:none"><label>Next Due Date</label><input id="edit-bill-next-date" type="date" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeEditBillModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditBill()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CATEGORY MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>Edit Transaction</h3>
+    <div class="form-row">
+      <div><label>Description</label><input id="edit-desc" readonly style="opacity:.6" /></div>
+    </div>
+    <div class="form-row">
+      <div><label>Category</label>
+        <select id="edit-category">
+          <option value="Housing">Housing</option>
+          <option value="Food">Food</option>
+          <option value="Groceries">Groceries</option>
+          <option value="Transportation">Transportation</option>
+          <option value="Utilities">Utilities</option>
+          <option value="Subscriptions">Subscriptions</option>
+          <option value="Insurance">Insurance</option>
+          <option value="Health">Health</option>
+          <option value="Personal Care">Personal Care</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Loans">Loans</option>
+          <option value="Pets">Pets</option>
+          <option value="Baby">Baby</option>
+          <option value="Income">Income</option>
+          <option value="Transfer">Transfer</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditTransaction()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────────────────────
+function getDefaultBudgets() {
+  return {
+    Housing: 4500, Food: 400, Groceries: 400, Transportation: 1100,
+    Subscriptions: 150, Utilities: 400, 'Personal Care': 200,
+    Health: 100, Pets: 150, Baby: 200, Shopping: 200, Entertainment: 100
+  };
+}
+let state = {
+  accounts: [],
+  bills: [],
+  income: [],
+  transactions: [],
+  budgets: getDefaultBudgets(),
+  settings: { buffer: 200, lastImported: null },
+  activity: []
+};
+let editingTxId = null;
+let pendingImport = [];
+let forecastChart = null;
+
+function save() {
+  const prev = localStorage.getItem('cashflow_v2');
+  if (prev) localStorage.setItem('cashflow_v2_undo', prev);
+  localStorage.setItem('cashflow_v2', JSON.stringify(state));
+  updateUndoButton();
+}
+function updateUndoButton() {
+  const btn = document.getElementById('undo-btn');
+  if (btn) btn.style.display = localStorage.getItem('cashflow_v2_undo') ? '' : 'none';
+}
+function undo() {
+  const prev = localStorage.getItem('cashflow_v2_undo');
+  if (!prev) return;
+  if (!confirm('Undo last action?')) return;
+  localStorage.setItem('cashflow_v2', prev);
+  localStorage.removeItem('cashflow_v2_undo');
+  load();
+  renderDashboard();
+  renderTransactions();
+  renderBudgets();
+  updateUndoButton();
+}
+function load() {
+  const raw = localStorage.getItem('cashflow_v2') || localStorage.getItem('cashflow_state');
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      state = {
+        accounts: parsed.accounts || [],
+        bills: parsed.bills || [],
+        income: parsed.income || [],
+        transactions: parsed.transactions || [],
+        budgets: (parsed.budgets && Object.keys(parsed.budgets).length) ? parsed.budgets : getDefaultBudgets(),
+        settings: Object.assign({ buffer: 200, lastImported: null }, parsed.settings || {}),
+        activity: parsed.activity || []
+      };
+      localStorage.setItem('cashflow_v2', JSON.stringify(state));
+    } catch(e) { console.error('Failed to load saved data:', e); }
+  }
+}
+
+// Parses a stored YYYY-MM-DD string as local midnight (not UTC).
+// Use everywhere a stored date string needs to become a Date object.
+function parseLocalDateStr(str) {
+  if (!str) return new Date();
+  const parts = str.split('-');
+  if (parts.length === 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  return new Date(str);
+}
+function dateToStr(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+function todayStr() { return dateToStr(new Date()); }
+
+// ─── CATEGORIES ─────────────────────────────────────────────────────────────
+const CAT_COLORS = {
+  Housing: '#6366f1', Food: '#f59e0b', Groceries: '#10b981', Transportation: '#3b82f6',
+  Utilities: '#8b5cf6', Subscriptions: '#ec4899', Insurance: '#14b8a6', Health: '#f97316',
+  Entertainment: '#a855f7', Shopping: '#06b6d4', Loans: '#ef4444', Income: '#22c55e',
+  Transfer: '#94a3b8', Pets: '#a78bfa', Baby: '#fb7185', 'Personal Care': '#f43f5e', Other: '#64748b'
+};
+function catColor(c) { return CAT_COLORS[c] || '#64748b'; }
+function catBadge(c) {
+  return `<span class="cat-badge" style="background:${catColor(c)}22;color:${catColor(c)}">${c||'Other'}</span>`;
+}
+
+// Auto-categorization keywords
+const AUTO_CAT = [
+  ['Income',          /payroll|direct dep|salary|paycheck|gusto|the united firm/i],
+  ['Transfer',        /transfer|zelle|venmo|paypal|cashapp|cash app|apple cash/i],
+  ['Housing',         /rent|mortgage|hoa|lease|apartment|wire.*rent|rent.*wire/i],
+  ['Subscriptions',   /netflix|hulu|spotify|amazon prime|disney|youtube|hbo|paramount|peacock|crunchyroll|dropbox|icloud|adobe|openai|chatgpt|irobot|ring.*solo|ring.*ai|uber.*one|uber one|instacart.*subscr|amazon.*prime/i],
+  ['Insurance',       /insurance|geico|progressive|allstate|state farm|liberty mutual|farmers|prog county mut/i],
+  ['Health',          /cvs|walgreens|pharmacy|medical|doctor|dentist|urgent care|hospital|primerica|cook children|synergenx|pilates|bluechew/i],
+  ['Pets',            /cosita pelu|cosita peluda|pet|vet |veterinar|petsmart|petco|animal/i],
+  ['Groceries',       /walmart|kroger|heb|whole foods|wholefds|trader joe|aldi|publix|costco|sam.s club|target|sprouts|instacart|ic\* costco|ic\* instacart/i],
+  ['Food',            /uber.*eat|uber\*eat|doordash|grubhub|mcdonald|burger king|chick-fil|taco bell|chipotle|starbucks|domino|pizza|restaurant|cafe|diner|sushi|bbq|smoothie|bakery|cantina|steakhouse|cocina|tropical smoothie|san martin|7 estrellas|venezuelan|fogo de chao|happiest hour|maggiano|catch-|castaway/i],
+  ['Transportation',  /shell|chevron|exxon|bp|valero|texaco|gas station|evgo|nayax ev|ev vehicle|ironhorse|iron horse|gm financial|hyperfuel|parking|toll|auto.*payment|car wash|jiffy lube|oil change/i],
+  ['Personal Care',   /hillpark|nail bar|lavender nail|nail salon|booksy|beauty|salon|hair|barber|spa |wax |eyelash|cosmetol|dry clean/i],
+  ['Shopping',        /amazon\.com|amazon\*|etsy|ebay|best buy|home depot|lowes|ikea|gap|h&m|nordstrom|macy|tj maxx|marshalls|ross|zara|alo.yoga|ferragamo|express#|tiffany|afterpay|sparrow card/i],
+  ['Entertainment',   /amc|regal|cinemark|ticketmaster|eventbrite|stubhub|steam|xbox|playstation|nintendo|bowling|fairpark/i],
+  ['Utilities',       /at&t|t-mobile|comcast|xfinity|electric|water.*bill|gas.*bill|utility|spectrum|cox|directv|sling|paymentus|terminix/i],
+  ['Baby',            /build.a.bear|cookie cutter|babies r us|buy buy baby|carter|gerber|pampers|huggies/i],
+  ['Loans',           /concora credit|mission lane|betrlink|auto.*loan|student loan/i],
+];
+function autoCategory(desc) {
+  const d = (desc||'').toLowerCase();
+  for (const [cat, re] of AUTO_CAT) {
+    if (re.test(d)) return cat;
+  }
+  return 'Other';
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────────────────────
+function switchPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  const tab = document.querySelector(`.nav-tab[data-page="${p}"]`);
+  if (tab) tab.classList.add('active');
+  if (p === 'dashboard') renderDashboard();
+  if (p === 'forecast') renderForecast();
+  if (p === 'transactions') renderTransactions();
+  if (p === 'accounts') renderAccounts();
+  if (p === 'bills') { renderBills(); renderIncome(); }
+  if (p === 'budgets') renderBudgets();
+  if (p === 'settings') renderSettings();
+}
+
+// ─── ACCOUNTS ────────────────────────────────────────────────────────────────
+function addAccount() {
+  const name = document.getElementById('acc-name').value.trim();
+  const type = document.getElementById('acc-type').value;
+  const balance = parseFloat(document.getElementById('acc-balance').value) || 0;
+  if (!name) return alert('Enter an account name.');
+  state.accounts.push({ id: Date.now(), name, type, balance });
+  save();
+  document.getElementById('acc-name').value = '';
+  document.getElementById('acc-balance').value = '';
+  renderAccounts();
+  updateImportAccountSelect();
+  renderDashboard();
+}
+
+function renderAccounts() {
+  const tbody = document.getElementById('accounts-table-body');
+  if (!state.accounts.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><div class="empty-icon">🏦</div>No accounts yet.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.accounts.map(a => `
+    <tr>
+      <td><strong>${esc(a.name)}</strong></td>
+      <td><span class="badge ${a.type==='credit'?'badge-red':a.type==='savings'?'badge-green':'badge-yellow'}">${a.type}</span></td>
+      <td><span style="color:${a.balance<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(a.balance)}</span></td>
+      <td>
+        <input type="number" value="${a.balance}" style="width:120px;margin-right:8px" onchange="updateAccountBalance(${a.id}, this.value)" step="0.01" />
+        <button class="btn btn-danger btn-sm" onclick="deleteAccount(${a.id})">Remove</button>
+      </td>
+    </tr>`).join('');
+}
+
+function updateAccountBalance(id, val) {
+  const a = state.accounts.find(x => x.id === id);
+  if (a) { a.balance = parseFloat(val)||0; save(); renderDashboard(); }
+}
+function deleteAccount(id) {
+  if (!confirm('Remove this account?')) return;
+  state.accounts = state.accounts.filter(x => x.id !== id);
+  save(); renderAccounts(); updateImportAccountSelect(); renderDashboard();
+}
+function updateImportAccountSelect() {
+  const sel = document.getElementById('import-account');
+  sel.innerHTML = '<option value="">— Select account —</option>' +
+    state.accounts.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+}
+
+// ─── BILLS ───────────────────────────────────────────────────────────────────
+function toggleBillDueField() {
+  const freq = document.getElementById('bill-frequency').value;
+  const isMonthly = freq === 'monthly';
+  document.getElementById('bill-day-wrap').style.display = isMonthly ? '' : 'none';
+  document.getElementById('bill-date-wrap').style.display = isMonthly ? 'none' : '';
+}
+
+function addBill() {
+  const name = document.getElementById('bill-name').value.trim();
+  const amount = parseFloat(document.getElementById('bill-amount').value);
+  const frequency = document.getElementById('bill-frequency').value;
+  const category = document.getElementById('bill-category').value;
+  if (!name || !amount) return alert('Fill in name and amount.');
+
+  let day = null, nextDate = null;
+  if (frequency === 'monthly') {
+    day = parseInt(document.getElementById('bill-day').value);
+    if (!day || day < 1 || day > 31) return alert('Enter a valid due day (1–31).');
+  } else {
+    nextDate = document.getElementById('bill-next-date').value;
+    if (!nextDate) return alert('Pick the next due date.');
+  }
+
+  state.bills.push({ id: Date.now(), name, amount, frequency, day, nextDate, category });
+  save();
+  document.getElementById('bill-name').value = '';
+  document.getElementById('bill-amount').value = '';
+  document.getElementById('bill-day').value = '';
+  document.getElementById('bill-next-date').value = '';
+  renderBills();
+  renderDashboard();
+}
+
+function deleteBill(id) {
+  state.bills = state.bills.filter(x => x.id !== id);
+  save(); renderBills(); renderDashboard();
+}
+
+// Returns the next occurrence of a bill on or after today
+function nextDueDateForBill(b) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  if (!b.frequency || b.frequency === 'monthly') {
+    // Legacy bills without frequency stored as monthly
+    const day = b.day;
+    const y = now.getFullYear(), m = now.getMonth();
+    let d = new Date(y, m, day);
+    if (d < now) d = new Date(y, m+1, day);
+    return d;
+  }
+  // biweekly / weekly — advance from stored nextDate until >= today
+  let d = parseLocalDateStr(b.nextDate);
+  const step = b.frequency === 'weekly' ? 7 : 14;
+  let safety = 0;
+  while (d < now && ++safety < 500) d.setDate(d.getDate() + step);
+  return d;
+}
+
+function isBillPaid(b) {
+  if (!b.paidUntil) return false;
+  return parseLocalDateStr(b.paidUntil) >= nextDueDateForBill(b);
+}
+function markBillPaid(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  b.paidUntil = dateToStr(nextDueDateForBill(b));
+  save(); renderBills(); renderDashboard();
+}
+function markBillUnpaid(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  b.paidUntil = null;
+  save(); renderBills(); renderDashboard();
+}
+
+// Keep old function name for any remaining callers
+function nextDueDate(day) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  let d = new Date(y, m, day);
+  if (d <= now) d = new Date(y, m+1, day);
+  return d;
+}
+
+function daysUntil(date) {
+  return Math.ceil((date - new Date()) / 86400000);
+}
+
+function freqLabel(b) {
+  if (!b.frequency || b.frequency === 'monthly') return `Monthly (day ${b.day})`;
+  if (b.frequency === 'biweekly') return 'Every 2 weeks';
+  if (b.frequency === 'weekly') return 'Weekly';
+  return b.frequency;
+}
+
+function renderBills() {
+  const tbody = document.getElementById('bills-table-body');
+  const totalLabel = document.getElementById('bills-total-label');
+  if (!state.bills.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">📄</div>No bills yet.</div></td></tr>';
+    totalLabel.textContent = '';
+    return;
+  }
+  // Monthly total: biweekly ≈ 2.17×/mo, weekly ≈ 4.33×/mo
+  const monthlyEq = state.bills.reduce((s, b) => {
+    const f = b.frequency;
+    const mult = f === 'weekly' ? 4.33 : f === 'biweekly' ? 2.17 : 1;
+    return s + b.amount * mult;
+  }, 0);
+  totalLabel.textContent = `~${fmt(monthlyEq)}/mo`;
+
+  const sorted = [...state.bills].sort((a,b) => nextDueDateForBill(a) - nextDueDateForBill(b));
+  tbody.innerHTML = sorted.map(b => {
+    const next = nextDueDateForBill(b);
+    const days = daysUntil(next);
+    const paid = isBillPaid(b);
+    const urgency = paid ? 'badge-green' : days <= 3 ? 'badge-red' : days <= 7 ? 'badge-yellow' : 'badge-green';
+    const dayLabel = paid ? 'Paid' : days <= 0 ? 'Today!' : `${days}d`;
+    return `<tr style="${paid ? 'opacity:.6' : ''}">
+      <td><strong>${esc(b.name)}</strong></td>
+      <td>${catBadge(b.category)}</td>
+      <td style="font-size:12px;color:var(--muted)">${freqLabel(b)}</td>
+      <td style="color:var(--red);font-weight:600">${fmt(b.amount)}</td>
+      <td><span class="badge ${urgency}">${dayLabel}</span> ${next.toLocaleDateString()}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        ${paid
+          ? `<button class="btn btn-ghost btn-sm" onclick="markBillUnpaid(${b.id})">Unpay</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="markBillPaid(${b.id})">Mark Paid</button>`}
+        <button class="btn btn-ghost btn-sm" onclick="openEditBillModal(${b.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteBill(${b.id})">Remove</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── EDIT BILL ───────────────────────────────────────────────────────────────
+let editingBillId = null;
+
+function openEditBillModal(id) {
+  const b = state.bills.find(x => x.id === id);
+  if (!b) return;
+  editingBillId = id;
+  document.getElementById('edit-bill-name').value = b.name;
+  document.getElementById('edit-bill-amount').value = b.amount;
+  const freq = b.frequency || 'monthly';
+  document.getElementById('edit-bill-frequency').value = freq;
+  document.getElementById('edit-bill-category').value = b.category || 'Other';
+  const isMonthly = freq === 'monthly';
+  document.getElementById('edit-bill-day-wrap').style.display = isMonthly ? '' : 'none';
+  document.getElementById('edit-bill-date-wrap').style.display = isMonthly ? 'none' : '';
+  if (isMonthly) document.getElementById('edit-bill-day').value = b.day || '';
+  else document.getElementById('edit-bill-next-date').value = b.nextDate || '';
+  document.getElementById('edit-bill-modal').classList.add('open');
+}
+
+function closeEditBillModal() {
+  document.getElementById('edit-bill-modal').classList.remove('open');
+  editingBillId = null;
+}
+
+function toggleEditBillDueField() {
+  const freq = document.getElementById('edit-bill-frequency').value;
+  const isMonthly = freq === 'monthly';
+  document.getElementById('edit-bill-day-wrap').style.display = isMonthly ? '' : 'none';
+  document.getElementById('edit-bill-date-wrap').style.display = isMonthly ? 'none' : '';
+}
+
+function saveEditBill() {
+  const b = state.bills.find(x => x.id === editingBillId);
+  if (!b) return;
+  const name = document.getElementById('edit-bill-name').value.trim();
+  const amount = parseFloat(document.getElementById('edit-bill-amount').value);
+  const frequency = document.getElementById('edit-bill-frequency').value;
+  const category = document.getElementById('edit-bill-category').value;
+  if (!name || !amount) return alert('Fill in name and amount.');
+  b.name = name;
+  b.amount = amount;
+  b.frequency = frequency;
+  b.category = category;
+  if (frequency === 'monthly') {
+    const day = parseInt(document.getElementById('edit-bill-day').value);
+    if (!day || day < 1 || day > 31) return alert('Enter a valid due day (1-31).');
+    b.day = day;
+    b.nextDate = null;
+  } else {
+    const nextDate = document.getElementById('edit-bill-next-date').value;
+    if (!nextDate) return alert('Pick the next due date.');
+    b.nextDate = nextDate;
+    b.day = null;
+  }
+  save();
+  closeEditBillModal();
+  renderBills();
+  renderDashboard();
+}
+
+// ─── INCOME ──────────────────────────────────────────────────────────────────
+function addIncome() {
+  const name = document.getElementById('inc-name').value.trim();
+  const amount = parseFloat(document.getElementById('inc-amount').value);
+  const frequency = document.getElementById('inc-frequency').value;
+  const nextDate = document.getElementById('inc-next').value;
+  if (!name || !amount || !nextDate) return alert('Fill in all income fields.');
+  state.income.push({ id: Date.now(), name, amount, frequency, nextDate });
+  save();
+  document.getElementById('inc-name').value = '';
+  document.getElementById('inc-amount').value = '';
+  document.getElementById('inc-next').value = '';
+  renderIncome();
+  renderDashboard();
+}
+function deleteIncome(id) {
+  state.income = state.income.filter(x => x.id !== id);
+  save(); renderIncome(); renderDashboard();
+}
+function renderIncome() {
+  const tbody = document.getElementById('income-table-body');
+  if (!state.income.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-icon">💰</div>No income sources yet.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.income.map(i => `<tr>
+    <td><strong>${esc(i.name)}</strong></td>
+    <td>${i.frequency}</td>
+    <td style="color:var(--green);font-weight:600">${fmt(i.amount)}</td>
+    <td>${i.nextDate}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteIncome(${i.id})">Remove</button></td>
+  </tr>`).join('');
+}
+
+function switchBillsTab(tab) {
+  document.getElementById('bills-panel').style.display = tab === 'bills' ? '' : 'none';
+  document.getElementById('income-panel').style.display = tab === 'income' ? '' : 'none';
+  document.querySelectorAll('.type-toggle button').forEach((b, i) => {
+    b.classList.toggle('active', (i===0 && tab==='bills') || (i===1 && tab==='income'));
+  });
+}
+
+// ─── CSV IMPORT ──────────────────────────────────────────────────────────────
+const uploadZone = document.getElementById('upload-zone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processCSVFile(file);
+});
+
+function handleCSVUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  if (file.name.endsWith('.csv') || file.type === 'text/csv') {
+    processCSVFile(file);
+  } else {
+    processStatementWithAI(file);
+  }
+}
+
+async function processStatementWithAI(file) {
+  if (!openAIKey) {
+    alert('Add your OpenAI API key in Settings to import PDFs and images.');
+    return;
+  }
+  const statusEl = document.getElementById('ai-import-status');
+  statusEl.style.display = '';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = '🤖 Reading statement with AI…';
+
+  try {
+    const reader = new FileReader();
+    const dataUrl = await new Promise((res, rej) => {
+      reader.onload = ev => res(ev.target.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+    const base64 = dataUrl.split(',')[1];
+    const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+    const isPdf = mimeType === 'application/pdf';
+
+    const accountName = document.getElementById('import-account').options[document.getElementById('import-account').selectedIndex]?.text || '';
+    const prompt = `This image is either a bank statement or a store receipt. Analyze it and return ONLY a raw JSON array (no markdown, no code blocks, no explanation). Each object must have: "date" (YYYY-MM-DD), "description" (full name as shown), "amount" (number — negative for purchases/debits/money out, positive for deposits/credits/money in). Rules: (1) If it is a BANK STATEMENT: extract every individual transaction row. (2) If it is a STORE RECEIPT: return ONE transaction using the store name as description and the total amount (negative). Use the date printed on the receipt. Return ONLY the raw JSON array. Example: [{"date":"2026-06-26","description":"WAL-MART #2973","amount":-140.29}]`;
+
+    const imageContent = isPdf
+      ? { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } }
+      : { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } };
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, imageContent] }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    let raw = data.choices[0].message.content.trim();
+    // Strip markdown code blocks if present
+    raw = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
+    const arrMatch = raw.startsWith('[') ? raw : raw.match(/\[[\s\S]*\]/)?.[0];
+    if (!arrMatch) throw new Error('Could not parse AI response.');
+    const items = JSON.parse(arrMatch);
+    if (!items.length) throw new Error('No transactions found in statement.');
+
+    const accountId = document.getElementById('import-account').value;
+    pendingImport = items.map((item, i) => ({
+      id: Date.now() + i,
+      date: item.date || todayStr(),
+      description: item.description || 'Unknown',
+      amount: Number(item.amount) || 0,
+      category: Number(item.amount) > 0 ? 'Income' : autoCategory(item.description || ''),
+      account: accountId
+    })).filter(t => t.description && t.amount !== 0);
+
+    statusEl.textContent = `✅ Found ${pendingImport.length} transactions. Review and confirm below.`;
+    statusEl.style.color = 'var(--green)';
+    showImportPreview();
+  } catch(err) {
+    statusEl.textContent = '❌ Error: ' + err.message;
+    statusEl.style.color = 'var(--red)';
+  }
+}
+
+function processCSVFile(file) {
+  if (!document.getElementById('import-account').value) {
+    return alert('Select an account before importing.');
+  }
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true,
+    complete: (results) => {
+      const rows = results.data;
+      if (!rows.length) return alert('No data found in CSV.');
+      pendingImport = parseTransactions(rows);
+      showImportPreview();
+    }
+  });
+}
+
+function detectColumns(row) {
+  const keys = Object.keys(row).map(k => k.trim().toLowerCase());
+  // Date column
+  const dateCol = Object.keys(row).find(k => /^date|^trans.*date|^posted/i.test(k.trim())) || Object.keys(row)[0];
+  // Description
+  const descCol = Object.keys(row).find(k => /desc|memo|payee|name|narr/i.test(k.trim())) || Object.keys(row)[1];
+  // Amount — handle debit/credit separate columns
+  const amtCol = Object.keys(row).find(k => /^amount$/i.test(k.trim()));
+  const debitCol = Object.keys(row).find(k => /debit/i.test(k.trim()));
+  const creditCol = Object.keys(row).find(k => /credit/i.test(k.trim()));
+  return { dateCol, descCol, amtCol, debitCol, creditCol };
+}
+
+function parseAmount(row, cols) {
+  if (cols.amtCol) {
+    let v = (row[cols.amtCol]||'').replace(/[$,\s]/g,'');
+    return parseFloat(v) || 0;
+  }
+  // Debit/Credit columns
+  const debit = parseFloat((row[cols.debitCol]||'').replace(/[$,]/g,'')) || 0;
+  const credit = parseFloat((row[cols.creditCol]||'').replace(/[$,]/g,'')) || 0;
+  // Debit = money out (negative), Credit = money in (positive)
+  if (credit > 0) return credit;
+  if (debit > 0) return -debit;
+  return 0;
+}
+
+function parseDate(str) {
+  if (!str) return new Date();
+  str = str.trim();
+  // YYYY-MM-DD — parse as local midnight (not UTC)
+  let m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  // MM/DD/YYYY — local midnight
+  m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]));
+  // MM-DD-YYYY — local midnight
+  m = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+  if (m) return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]));
+  return new Date();
+}
+
+function parseTransactions(rows) {
+  if (!rows.length) return [];
+  const cols = detectColumns(rows[0]);
+  return rows.map(row => {
+    const desc = (row[cols.descCol]||'').trim();
+    const amount = parseAmount(row, cols);
+    const date = parseDate(row[cols.dateCol]);
+    const cat = amount > 0 ? 'Income' : autoCategory(desc);
+    return {
+      id: Date.now() + Math.random(),
+      date: dateToStr(date),
+      description: desc,
+      amount,
+      category: cat,
+      account: document.getElementById('import-account').value
+    };
+  }).filter(t => t.description);
+}
+
+function isFuzzyDupe(t) {
+  // Exact dupe
+  const exactKey = `${t.date}|${t.description}|${t.amount}`;
+  const exactSet = new Set(state.transactions.map(x => `${x.date}|${x.description}|${x.amount}`));
+  if (exactSet.has(exactKey)) return 'exact';
+  // Fuzzy: same date + same amount, different description
+  const fuzzy = state.transactions.find(x =>
+    x.date === t.date && Math.abs(x.amount) === Math.abs(t.amount) && x.description !== t.description
+  );
+  if (fuzzy) return `possible duplicate of "${fuzzy.description}"`;
+  return null;
+}
+
+function showImportPreview() {
+  document.getElementById('import-preview').style.display = '';
+  const tbody = document.getElementById('preview-table-body');
+  const preview = pendingImport.slice(0, 50);
+  let fuzzyCount = 0;
+  tbody.innerHTML = preview.map((t, i) => {
+    const dupeStatus = isFuzzyDupe(t);
+    const isExact = dupeStatus === 'exact';
+    const isFuzzy = dupeStatus && !isExact;
+    if (isFuzzy) fuzzyCount++;
+    const rowStyle = isExact || isFuzzy ? 'opacity:.5' : '';
+    const checked = !isExact && !isFuzzy; // fuzzy dupes unchecked by default
+    const note = isExact
+      ? `<span style="color:var(--muted);font-size:11px">exact dupe — skipped</span>`
+      : isFuzzy
+      ? `<span style="color:var(--yellow);font-size:11px">⚠️ ${esc(dupeStatus)}</span>`
+      : '';
+    return `<tr style="${rowStyle}">
+      <td style="text-align:center"><input type="checkbox" class="import-checkbox" data-idx="${i}" ${checked ? 'checked' : ''} ${isExact ? 'disabled' : ''} /></td>
+      <td>${t.date}</td>
+      <td>${esc(t.description.substring(0,50))}</td>
+      <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(t.amount)}</td>
+      <td>${catBadge(t.category)}</td>
+      <td>${note}</td>
+    </tr>`;
+  }).join('');
+  if (pendingImport.length > 50) {
+    tbody.innerHTML += `<tr><td colspan="6" style="color:var(--muted);text-align:center">… and ${pendingImport.length - 50} more</td></tr>`;
+  }
+  const total = preview.filter(t => isFuzzyDupe(t) !== 'exact').length;
+  document.getElementById('preview-count').textContent = `${pendingImport.length} found${fuzzyCount ? ` · ${fuzzyCount} possible duplicate${fuzzyCount>1?'s':''} flagged` : ''}`;
+}
+
+function confirmImport() {
+  const checkboxes = document.querySelectorAll('.import-checkbox:checked:not(:disabled)');
+  const selectedIdxs = new Set([...checkboxes].map(cb => Number(cb.dataset.idx)));
+  const exactSet = new Set(state.transactions.map(t => `${t.date}|${t.description}|${t.amount}`));
+  // Always skip exact dupes; only include checked items from preview
+  const preview = pendingImport.slice(0, 50);
+  const rest = pendingImport.slice(50); // items beyond preview are included automatically (no checkbox shown)
+  const fromPreview = preview.filter((t, i) => selectedIdxs.has(i) && isFuzzyDupe(t) !== 'exact');
+  const fromRest = rest.filter(t => !exactSet.has(`${t.date}|${t.description}|${t.amount}`));
+  const newTx = [...fromPreview, ...fromRest];
+  const skipped = pendingImport.length - newTx.length;
+  state.transactions.push(...newTx);
+  state.transactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+  logActivity('import', `Imported ${newTx.length} transactions (${skipped} skipped)`);
+  save();
+  pendingImport = [];
+  clearImportPreview();
+  renderTransactions();
+  renderDashboard();
+  alert(`✅ Imported ${newTx.length} transactions (${skipped} skipped).`);
+}
+
+function clearImportPreview() {
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('ai-import-status').style.display = 'none';
+  pendingImport = [];
+}
+
+// ─── TRANSACTIONS ─────────────────────────────────────────────────────────────
+let txFilter = '';
+let txCatFilter = '';
+let txMonthFilter = '';
+let txSortCol = 'date';
+let txSortDir = 'desc';
+
+function renderTransactions() {
+  const tbody = document.getElementById('transactions-table-body');
+  const catFilter = document.getElementById('cat-filter');
+  // Populate month filter
+  const monthEl = document.getElementById('month-filter');
+  const months = [...new Set(state.transactions.map(t => t.date ? t.date.substring(0,7) : ''))].filter(Boolean).sort().reverse();
+  const currentMonthVal = monthEl.value;
+  monthEl.innerHTML = '<option value="">All Months</option>' + months.map(m => {
+    const [y, mo] = m.split('-');
+    const label = new Date(Number(y), Number(mo)-1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return `<option value="${m}"${m === currentMonthVal ? ' selected' : ''}>${label}</option>`;
+  }).join('');
+  // Default to current month if no filter set yet
+  if (!txMonthFilter && !currentMonthVal && months.length) {
+    const thisMonth = todayStr().substring(0,7);
+    if (months.includes(thisMonth)) { txMonthFilter = thisMonth; monthEl.value = thisMonth; }
+  }
+
+  // Update category filter options
+  const cats = [...new Set(state.transactions.map(t => t.category))].sort();
+  catFilter.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c}"${c===txCatFilter?' selected':''}>${c}</option>`).join('');
+
+  let tx = state.transactions.filter(t => {
+    const matchText = !txFilter || t.description.toLowerCase().includes(txFilter.toLowerCase());
+    const matchCat = !txCatFilter || t.category === txCatFilter;
+    const matchMonth = !txMonthFilter || (t.date && t.date.startsWith(txMonthFilter));
+    return matchText && matchCat && matchMonth;
+  });
+
+  // Sort
+  tx.sort((a, b) => {
+    let av = a[txSortCol] || '', bv = b[txSortCol] || '';
+    if (txSortCol === 'amount') { av = Number(av); bv = Number(bv); }
+    else if (txSortCol === 'date') { av = av.replace(/-/g,''); bv = bv.replace(/-/g,''); }
+    else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase(); }
+    if (av < bv) return txSortDir === 'asc' ? -1 : 1;
+    if (av > bv) return txSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  // Update sort indicators
+  ['date','description','amount','category'].forEach(col => {
+    const el = document.getElementById('sort-ind-' + col);
+    if (el) el.textContent = col === txSortCol ? (txSortDir === 'asc' ? '↑' : '↓') : '';
+  });
+
+  if (!tx.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">📊</div>No transactions found.</div></td></tr>';
+    return;
+  }
+
+  const accMap = Object.fromEntries(state.accounts.map(a => [a.id, a.name]));
+  tbody.innerHTML = tx.slice(0, 200).map(t => `
+    <tr>
+      <td><input type="checkbox" class="tx-checkbox" data-id="${t.id}" onchange="onTxCheckChange()" /></td>
+      <td style="white-space:nowrap">${t.date}</td>
+      <td>${esc(t.description.substring(0,60))}${t.splitFrom ? ` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px" title="Split from: ${esc(t.splitFrom)}">split</span>` : ''}</td>
+      <td style="color:var(--muted);font-size:12px">${esc(accMap[t.account]||'—')}</td>
+      <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600;white-space:nowrap">${fmt(t.amount)}</td>
+      <td>${catBadge(t.category)}</td>
+      <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="openEditModal('${t.id}')">Edit</button> <button class="btn btn-ghost btn-sm" onclick="openSplitModal('${t.id}')" title="Split this transaction by receipt">Split</button> <button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">Delete</button></td>
+    </tr>`).join('');
+}
+
+function getCheckedTxIds() {
+  return [...document.querySelectorAll('.tx-checkbox:checked')].map(cb => cb.dataset.id);
+}
+function onTxCheckChange() {
+  const ids = getCheckedTxIds();
+  const bar = document.getElementById('bulk-tx-bar');
+  bar.style.display = ids.length ? 'flex' : 'none';
+  document.getElementById('bulk-tx-count').textContent = ids.length + ' selected';
+  const allBoxes = document.querySelectorAll('.tx-checkbox');
+  document.getElementById('select-all-tx').checked = allBoxes.length > 0 && ids.length === allBoxes.length;
+}
+function toggleSelectAllTx(checked) {
+  document.querySelectorAll('.tx-checkbox').forEach(cb => cb.checked = checked);
+  onTxCheckChange();
+}
+function clearBulkSelection() {
+  document.querySelectorAll('.tx-checkbox').forEach(cb => cb.checked = false);
+  const selectAll = document.getElementById('select-all-tx');
+  if (selectAll) selectAll.checked = false;
+  document.getElementById('bulk-tx-bar').style.display = 'none';
+  document.getElementById('bulk-tx-category').value = '';
+}
+function applyBulkCategory() {
+  const cat = document.getElementById('bulk-tx-category').value;
+  if (!cat) return alert('Pick a category first.');
+  const ids = getCheckedTxIds();
+  if (!ids.length) return;
+  ids.forEach(id => {
+    const t = state.transactions.find(x => String(x.id) === String(id));
+    if (t) t.category = cat;
+  });
+  save();
+  clearBulkSelection();
+  renderTransactions();
+  renderDashboard();
+}
+
+function logActivity(type, message) {
+  if (!state.activity) state.activity = [];
+  state.activity.unshift({ type, message, timestamp: new Date().toISOString() });
+  if (state.activity.length > 50) state.activity = state.activity.slice(0, 50);
+}
+function renderActivity() {
+  const el = document.getElementById('dash-activity');
+  if (!el) return;
+  if (!state.activity || !state.activity.length) {
+    el.innerHTML = '<div class="empty" style="padding:12px 0">No activity yet.</div>';
+    return;
+  }
+  const icons = { split: '✂️', import: '📥', delete: '🗑️', edit: '✏️', budget: '🎯', bill: '📄', account: '🏦' };
+  el.innerHTML = state.activity.slice(0, 15).map(a => {
+    const d = new Date(a.timestamp);
+    const timeStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:16px">${icons[a.type] || '📌'}</span>
+      <span style="flex:1;font-size:13px">${esc(a.message)}</span>
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">${timeStr}</span>
+    </div>`;
+  }).join('');
+}
+
+function deleteTx(id) {
+  const t = state.transactions.find(x => String(x.id) === String(id));
+  if (t) logActivity('delete', `Deleted: ${t.description} (${fmt(t.amount)})`);
+  state.transactions = state.transactions.filter(x => String(x.id) !== String(id));
+  save(); renderTransactions(); renderDashboard();
+}
+function sortTx(col) {
+  if (txSortCol === col) txSortDir = txSortDir === 'asc' ? 'desc' : 'asc';
+  else { txSortCol = col; txSortDir = col === 'amount' ? 'desc' : 'asc'; }
+  renderTransactions();
+}
+function filterTransactions(v) { txFilter = v; renderTransactions(); }
+function filterTransactionsByCategory(v) { txCatFilter = v; renderTransactions(); }
+function filterTransactionsByMonth(v) { txMonthFilter = v; renderTransactions(); }
+
+function openEditModal(id) {
+  editingTxId = id;
+  const t = state.transactions.find(x => String(x.id) === String(id));
+  if (!t) return;
+  document.getElementById('edit-desc').value = t.description;
+  document.getElementById('edit-category').value = t.category || 'Other';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  editingTxId = null;
+}
+function saveEditTransaction() {
+  const t = state.transactions.find(x => String(x.id) === String(editingTxId));
+  if (t) { t.category = document.getElementById('edit-category').value; save(); }
+  closeModal(); renderTransactions(); renderDashboard();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  renderActivity();
+
+  // Balance
+  const totalBalance = state.accounts.reduce((s, a) => s + a.balance, 0);
+  document.getElementById('dash-balance').textContent = fmt(totalBalance);
+  document.getElementById('dash-accounts-count').textContent = `across ${state.accounts.length} account${state.accounts.length===1?'':'s'}`;
+
+  // Upcoming bills — 14-day window for list + stat card
+  const now = new Date();
+  const in14 = new Date(now); in14.setDate(in14.getDate()+14);
+  const in30 = new Date(now); in30.setDate(in30.getDate()+30); // keep for alert math
+  const upcomingAll = state.bills.map(b => {
+    const d = nextDueDateForBill(b);
+    return { ...b, nextDate: d, days: daysUntil(d), paid: isBillPaid(b) };
+  }).filter(b => b.nextDate <= in14).sort((a,b) => a.nextDate - b.nextDate);
+  const upcoming = upcomingAll.filter(b => !b.paid);
+
+  const bills14Total = upcoming.reduce((s,b) => s+b.amount, 0);
+  document.getElementById('dash-bills-due').textContent = fmt(bills14Total);
+  document.getElementById('dash-bills-count').textContent = `${upcoming.length} bill${upcoming.length===1?'':'s'} in next 14 days`;
+
+  // Safe to spend + "Need This Week" — 7-day window
+  const in7 = new Date(now); in7.setDate(in7.getDate() + 7);
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+
+  const bills7Total = upcomingAll
+    .filter(b => !b.paid && b.nextDate <= in7)
+    .reduce((s, b) => s + b.amount, 0);
+
+  // Need This Week card
+  document.getElementById('dash-need-week').textContent = fmt(bills7Total);
+  document.getElementById('dash-need-week').className = 'stat-value ' + (bills7Total > 0 ? 'red' : 'green');
+  document.getElementById('dash-need-week-by').textContent = 'by ' + in7.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+
+  // Bills due in next 30 days (for Safe-to-Spend formula)
+  const bills30Total = state.bills.map(b => {
+    const d = nextDueDateForBill(b);
+    return { ...b, nextDate: d, paid: isBillPaid(b) };
+  }).filter(b => !b.paid && b.nextDate <= in30).reduce((s, b) => s + b.amount, 0);
+
+  // Income arriving in next 30 days (used in Safe-to-Spend formula)
+  let incomeIn30 = 0;
+  for (const inc of state.income) {
+    let d = parseLocalDateStr(inc.nextDate);
+    let safety = 0;
+    while (d < now && ++safety < 500) {
+      if (inc.frequency === 'weekly') d.setDate(d.getDate()+7);
+      else if (inc.frequency === 'biweekly') d.setDate(d.getDate()+14);
+      else if (inc.frequency === 'semimonthly') d.setDate(d.getDate()+15);
+      else d.setMonth(d.getMonth()+1);
+    }
+    safety = 0;
+    while (d <= in30 && ++safety < 500) {
+      incomeIn30 += inc.amount;
+      if (inc.frequency === 'weekly') d.setDate(d.getDate()+7);
+      else if (inc.frequency === 'biweekly') d.setDate(d.getDate()+14);
+      else if (inc.frequency === 'semimonthly') d.setDate(d.getDate()+15);
+      else d.setMonth(d.getMonth()+1);
+    }
+  }
+
+  // Safe to Spend = balance + income(30d) − bills(30d) − buffer, floored at $0
+  const buffer = state.settings.buffer || 200;
+  const safeSpendRaw = totalBalance + incomeIn30 - bills30Total - buffer;
+  const safeSpend = Math.max(0, safeSpendRaw);
+  const safeEl = document.getElementById('dash-safe-spend');
+  safeEl.textContent = fmt(safeSpend);
+  safeEl.className = 'stat-value ' + (safeSpend === 0 ? 'red' : safeSpend < 500 ? 'yellow' : 'green');
+  document.getElementById('dash-safe-sub').textContent =
+    `bal + ${fmt(incomeIn30)} income − ${fmt(bills30Total)} bills (30d) − $${buffer} buffer`;
+
+  // Spent this month
+  const thisMonth = now.getMonth(), thisYear = now.getFullYear();
+  const monthTx = state.transactions.filter(t => {
+    const d = parseLocalDateStr(t.date);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  });
+  const spentMonth = monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer').reduce((s,t) => s + Math.abs(t.amount), 0);
+  const incomeMonth = monthTx.filter(t => t.amount > 0).reduce((s,t) => s + t.amount, 0);
+  document.getElementById('dash-spent').textContent = fmt(spentMonth);
+  document.getElementById('dash-income-month').textContent = `${fmt(incomeMonth)} income logged`;
+
+  // Upcoming bills list
+  const upcomingList = document.getElementById('dash-upcoming-list');
+  if (!upcoming.length) {
+    upcomingList.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>No bills due in the next 14 days.</div>';
+  } else {
+    upcomingList.innerHTML = upcoming.map(b => {
+      const urgency = b.days <= 3 ? 'badge-red' : b.days <= 7 ? 'badge-yellow' : 'badge-green';
+      const urgencyText = b.days <= 0 ? 'TODAY' : b.days === 1 ? 'Tomorrow' : `${b.days} days`;
+      return `<div class="bill-item">
+        <div>
+          <div class="bill-name">${esc(b.name)}</div>
+          <div class="bill-date">${b.nextDate.toLocaleDateString()} · ${catBadge(b.category)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="bill-amount red">${fmt(b.amount)}</div>
+          <span class="badge ${urgency}">${urgencyText}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Categories breakdown
+  const catList = document.getElementById('dash-categories-list');
+  const spendByCat = {};
+  monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer' && t.category !== 'Income').forEach(t => {
+    spendByCat[t.category] = (spendByCat[t.category]||0) + Math.abs(t.amount);
+  });
+  const catEntries = Object.entries(spendByCat).sort((a,b) => b[1]-a[1]);
+  if (!catEntries.length) {
+    catList.innerHTML = '<div class="empty"><div class="empty-icon">📁</div>No spending data yet.</div>';
+  } else {
+    const maxVal = catEntries[0][1];
+    catList.innerHTML = catEntries.map(([cat, amt]) => `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:13px">${catBadge(cat)} ${cat}</span>
+          <span style="font-size:13px;font-weight:600">${fmt(amt)}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${(amt/maxVal*100).toFixed(1)}%;background:${catColor(cat)}"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Alert — use safeSpendRaw so we still warn when balance is actually short
+  const alertEl = document.getElementById('dash-alert');
+  if (safeSpendRaw < 0) {
+    alertEl.innerHTML = `<div class="alert" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5">🚨 <strong>Warning:</strong> Even with ${fmt(incomeIn30)} expected income, you're ${fmt(Math.abs(safeSpendRaw))} short of covering ${fmt(bills30Total)} in 30-day bills plus the $${buffer} buffer.</div>`;
+  } else if (safeSpendRaw < 300) {
+    alertEl.innerHTML = `<div class="alert alert-info">⚠️ <strong>Heads up:</strong> After 30-day bills and buffer, you'll have ${fmt(safeSpend)} left. Spend carefully.</div>`;
+  } else {
+    alertEl.innerHTML = `<div class="alert alert-success">✅ You're in good shape! Safe to spend: <strong>${fmt(safeSpend)}</strong> (balance + ${fmt(incomeIn30)} income − ${fmt(bills30Total)} bills (30d) − $${buffer} buffer).</div>`;
+  }
+}
+
+// ─── FORECAST ─────────────────────────────────────────────────────────────────
+function generateForecastEvents() {
+  const events = [];
+  const now = new Date();
+  const end = new Date(now); end.setDate(end.getDate()+60);
+
+  // Bills
+  for (const b of state.bills) {
+    let d = nextDueDateForBill(b);
+    while (d <= end) {
+      events.push({ date: new Date(d), label: b.name, type: 'bill', amount: -b.amount, category: b.category });
+      const freq = b.frequency;
+      if (freq === 'weekly') {
+        d = new Date(d); d.setDate(d.getDate() + 7);
+      } else if (freq === 'biweekly') {
+        d = new Date(d); d.setDate(d.getDate() + 14);
+      } else {
+        d = new Date(d.getFullYear(), d.getMonth()+1, b.day);
+      }
+    }
+  }
+
+  // Income
+  for (const inc of state.income) {
+    let d = parseLocalDateStr(inc.nextDate);
+    let safety = 0;
+    while (d <= end && ++safety < 500) {
+      if (d >= now) events.push({ date: new Date(d), label: inc.name, type: 'income', amount: inc.amount });
+      // Advance by frequency
+      if (inc.frequency === 'weekly') d.setDate(d.getDate()+7);
+      else if (inc.frequency === 'biweekly') d.setDate(d.getDate()+14);
+      else if (inc.frequency === 'semimonthly') d.setDate(d.getDate()+15);
+      else d.setMonth(d.getMonth()+1);
+    }
+  }
+
+  events.sort((a,b) => a.date - b.date);
+  return events;
+}
+
+function renderForecast() {
+  const startBalance = state.accounts.reduce((s,a) => s+a.balance, 0);
+  const events = generateForecastEvents();
+  document.getElementById('forecast-start-bal').textContent = fmt(startBalance);
+
+  // Build daily balance series
+  const now = new Date();
+  const days = 60;
+  const labels = [], balances = [];
+  let running = startBalance;
+
+  const eventsByDay = {};
+  for (const e of events) {
+    const key = e.date.toISOString().split('T')[0];
+    if (!eventsByDay[key]) eventsByDay[key] = [];
+    eventsByDay[key].push(e);
+  }
+
+  for (let i = 0; i <= days; i++) {
+    const d = new Date(now); d.setDate(d.getDate()+i);
+    const key = d.toISOString().split('T')[0];
+    if (eventsByDay[key]) {
+      running += eventsByDay[key].reduce((s,e) => s+e.amount, 0);
+    }
+    labels.push(d.toLocaleDateString('en-US', {month:'short', day:'numeric'}));
+    balances.push(Math.round(running*100)/100);
+  }
+
+  // Stat cards
+  const endBal = balances[balances.length - 1];
+  const netChange = endBal - startBalance;
+  const endBalEl = document.getElementById('forecast-end-bal');
+  const netEl = document.getElementById('forecast-net-change');
+  const netSubEl = document.getElementById('forecast-net-sub');
+  endBalEl.textContent = fmt(endBal);
+  endBalEl.style.color = endBal < 0 ? 'var(--red)' : endBal < 500 ? 'var(--yellow)' : 'var(--green)';
+  netEl.textContent = (netChange >= 0 ? '+' : '') + fmt(netChange);
+  netEl.style.color = netChange >= 0 ? 'var(--green)' : 'var(--red)';
+  netSubEl.textContent = netChange >= 0 ? 'projected gain' : 'projected loss';
+
+  // Lowest point warning
+  const minBal = Math.min(...balances);
+  if (minBal < 0) {
+    netSubEl.textContent = `⚠️ Goes negative (low: ${fmt(minBal)})`;
+    netSubEl.style.color = 'var(--red)';
+  }
+
+  // Chart
+  const ctx = document.getElementById('forecast-chart').getContext('2d');
+  if (forecastChart) forecastChart.destroy();
+  forecastChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Projected Balance',
+        data: balances,
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `Balance: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(46,50,72,.5)' }, ticks: { color: '#94a3b8', maxTicksLimit: 10 } },
+        y: {
+          grid: { color: 'rgba(46,50,72,.5)' },
+          ticks: { color: '#94a3b8', callback: v => '$' + v.toLocaleString() }
+        }
+      }
+    }
+  });
+
+  // Forecast table
+  const tbody = document.getElementById('forecast-table-body');
+  if (!events.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty">Add bills and income sources to see your forecast.</div></td></tr>';
+    return;
+  }
+  let runBal = startBalance;
+  tbody.innerHTML = events.map(e => {
+    runBal += e.amount;
+    return `<tr>
+      <td style="white-space:nowrap">${e.date.toLocaleDateString()}</td>
+      <td>${esc(e.label)}</td>
+      <td><span class="badge ${e.type==='bill'?'badge-red':'badge-green'}">${e.type}</span></td>
+      <td style="color:${e.amount<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(e.amount)}</td>
+      <td style="color:${runBal<0?'var(--red)':runBal<500?'var(--yellow)':'var(--text)'};font-weight:600">${fmt(runBal)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── BUDGETS ─────────────────────────────────────────────────────────────────
+function setBudget() {
+  const cat = document.getElementById('budget-category').value;
+  const amt = parseFloat(document.getElementById('budget-amount').value);
+  if (!amt || amt <= 0) return alert('Enter a valid amount.');
+  state.budgets[cat] = amt;
+  save();
+  document.getElementById('budget-amount').value = '';
+  renderBudgets();
+}
+
+function deleteBudget(cat) {
+  delete state.budgets[cat];
+  save(); renderBudgets();
+}
+
+function startBudgetInlineEdit(cat) {
+  const key = cat.replace(/\s/g, '_');
+  document.getElementById('budget-display-' + key).style.display = 'none';
+  const wrap = document.getElementById('budget-edit-inline-' + key);
+  wrap.style.display = 'flex';
+  document.getElementById('budget-edit-val-' + key).focus();
+}
+function cancelBudgetInline(cat) {
+  const key = cat.replace(/\s/g, '_');
+  document.getElementById('budget-display-' + key).style.display = '';
+  document.getElementById('budget-edit-inline-' + key).style.display = 'none';
+}
+function saveBudgetInline(cat) {
+  const key = cat.replace(/\s/g, '_');
+  const val = parseFloat(document.getElementById('budget-edit-val-' + key).value);
+  if (!val || val <= 0) return alert('Enter a valid amount.');
+  state.budgets[cat] = val;
+  save(); renderBudgets();
+}
+
+function loadRecommendedBudgets() {
+  const recommended = {
+    Housing: 4500, Food: 400, Groceries: 400, Transportation: 1100,
+    Subscriptions: 150, Utilities: 400, 'Personal Care': 200,
+    Health: 100, Pets: 150, Baby: 200, Shopping: 200, Entertainment: 100
+  };
+  const existing = Object.keys(state.budgets);
+  if (existing.length > 0) {
+    if (!confirm('This will overwrite your existing budgets. Continue?')) return;
+  }
+  Object.assign(state.budgets, recommended);
+  save(); renderBudgets();
+}
+
+let budgetBulkMode = false;
+
+function startBulkEdit() {
+  budgetBulkMode = true;
+  renderBudgets();
+  document.getElementById('bulk-edit-btn').style.display = 'none';
+  document.getElementById('bulk-save-btn').style.display = '';
+  document.getElementById('bulk-cancel-btn').style.display = '';
+}
+function cancelBulkEdit() {
+  budgetBulkMode = false;
+  renderBudgets();
+  document.getElementById('bulk-edit-btn').style.display = '';
+  document.getElementById('bulk-save-btn').style.display = 'none';
+  document.getElementById('bulk-cancel-btn').style.display = 'none';
+}
+function saveBulkEdit() {
+  const entries = Object.keys(state.budgets);
+  for (const cat of entries) {
+    const key = cat.replace(/\s/g, '_');
+    const input = document.getElementById('bulk-val-' + key);
+    if (!input) continue;
+    const val = parseFloat(input.value);
+    if (val > 0) state.budgets[cat] = val;
+  }
+  save();
+  budgetBulkMode = false;
+  renderBudgets();
+  document.getElementById('bulk-edit-btn').style.display = '';
+  document.getElementById('bulk-save-btn').style.display = 'none';
+  document.getElementById('bulk-cancel-btn').style.display = 'none';
+}
+
+function renderBudgets() {
+  const el = document.getElementById('budgets-list');
+  if (!Object.keys(state.budgets).length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div>No budgets set yet.</div>';
+    return;
+  }
+  // Get this month spending per category
+  const now = new Date();
+  const monthTx = state.transactions.filter(t => {
+    const d = parseLocalDateStr(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const spendByCat = {};
+  monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer').forEach(t => {
+    spendByCat[t.category] = (spendByCat[t.category]||0) + Math.abs(t.amount);
+  });
+
+  const budgetSort = document.getElementById('budget-sort')?.value || 'name';
+  const sortedBudgets = Object.entries(state.budgets).sort(([catA, limA], [catB, limB]) => {
+    const spentA = spendByCat[catA] || 0, spentB = spendByCat[catB] || 0;
+    if (budgetSort === 'spent') return spentB - spentA;
+    if (budgetSort === 'remaining') return (limA - spentA) - (limB - spentB);
+    if (budgetSort === 'pct') return (spentB / limB) - (spentA / limA);
+    if (budgetSort === 'limit') return limB - limA;
+    return catA.localeCompare(catB); // name
+  });
+  el.innerHTML = sortedBudgets.map(([cat, limit]) => {
+    const spent = spendByCat[cat] || 0;
+    const pct = Math.min((spent / limit) * 100, 100);
+    const over = spent > limit;
+    const warn = spent / limit >= 0.75;
+    const fillColor = over ? 'var(--red)' : warn ? 'var(--yellow)' : 'var(--green)';
+    const safecat = cat.replace(/'/g, "\\'");
+    const key = cat.replace(/\s/g, '_');
+    const amountDisplay = budgetBulkMode
+      ? `<input id="bulk-val-${key}" type="number" step="1" value="${limit}" style="width:100px;padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;color:var(--text)" />`
+      : `<span id="budget-display-${key}" style="font-size:13px;color:var(--muted)">${fmt(spent)} / ${fmt(limit)}</span>
+         <span id="budget-edit-inline-${key}" style="display:none;align-items:center;gap:4px">
+           <input id="budget-edit-val-${key}" type="number" step="1" value="${limit}" style="width:90px;padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;color:var(--text)" onkeydown="if(event.key==='Enter')saveBudgetInline('${safecat}');if(event.key==='Escape')cancelBudgetInline('${safecat}')" />
+           <button class="btn btn-primary btn-sm" onclick="saveBudgetInline('${safecat}')">Save</button>
+           <button class="btn btn-ghost btn-sm" onclick="cancelBudgetInline('${safecat}')">Cancel</button>
+         </span>`;
+    const actionButtons = budgetBulkMode
+      ? ''
+      : `<button class="btn btn-ghost btn-sm" onclick="startBudgetInlineEdit('${safecat}')">Edit</button>
+         <button class="btn btn-danger btn-sm" onclick="deleteBudget('${safecat}')">Remove</button>`;
+    return `<div class="card section-gap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>${catBadge(cat)} <strong style="margin-left:6px">${cat}</strong></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${amountDisplay}
+          ${over && !budgetBulkMode ? '<span class="badge badge-red">Over!</span>' : ''}
+          ${actionButtons}
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${pct.toFixed(1)}%;background:${fillColor}"></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">${over ? fmt(spent - limit) + ' over budget' : fmt(limit - spent) + ' remaining'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function renderSettings() {
+  document.getElementById('settings-buffer').value = state.settings.buffer || 200;
+  const li = document.getElementById('settings-last-imported');
+  li.textContent = state.settings.lastImported ? 'Last import: ' + state.settings.lastImported : '';
+  document.getElementById('sync-api-key').value = syncConfig.apiKey || '';
+  document.getElementById('sync-bin-id').value = syncConfig.binId || '';
+  document.getElementById('openai-api-key').value = openAIKey || '';
+}
+
+function saveSettings() {
+  const buf = parseFloat(document.getElementById('settings-buffer').value);
+  if (!isNaN(buf) && buf >= 0) state.settings.buffer = buf;
+  save();
+  renderDashboard();
+  const msg = document.getElementById('settings-saved');
+  msg.style.display = '';
+  setTimeout(() => { msg.style.display = 'none'; }, 2000);
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cashflow-backup-' + todayStr() + '.json';
+  a.click();
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      state = {
+        accounts: parsed.accounts || [],
+        bills: parsed.bills || [],
+        income: parsed.income || [],
+        transactions: parsed.transactions || [],
+        budgets: parsed.budgets || {},
+        settings: Object.assign({ buffer: 200, lastImported: null }, parsed.settings || {})
+      };
+      state.settings.lastImported = todayStr();
+      save();
+      renderDashboard(); renderAccounts(); renderBills(); renderIncome();
+      renderTransactions(); renderBudgets(); renderSettings();
+      updateImportAccountSelect();
+      alert('Backup restored successfully.');
+    } catch(err) { alert('Could not read the file. Make sure it is valid JSON.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ─── CLOUD SYNC ──────────────────────────────────────────────────────────────
+// ─── RECEIPT AI ──────────────────────────────────────────────────────────────
+let openAIKey = '';
+function loadOpenAIKey() {
+  try { openAIKey = localStorage.getItem('cashflow_openai') || ''; } catch(e) {}
+}
+function saveOpenAIKey() {
+  const key = document.getElementById('openai-api-key').value.trim();
+  if (!key) return;
+  localStorage.setItem('cashflow_openai', key);
+  openAIKey = key;
+  document.getElementById('openai-key-status').textContent = 'Key saved.';
+  setTimeout(() => document.getElementById('openai-key-status').textContent = '', 2000);
+}
+
+let splittingTxId = null;
+let receiptBase64 = null;
+const CAT_OPTIONS = ['Housing','Food','Groceries','Transportation','Utilities','Subscriptions','Insurance','Health','Personal Care','Entertainment','Shopping','Loans','Pets','Baby','Transfer','Income','Other'];
+
+function openSplitModal(id) {
+  const t = state.transactions.find(x => String(x.id) === String(id));
+  if (!t) return;
+  splittingTxId = id;
+  receiptBase64 = null;
+  document.getElementById('receipt-preview').style.display = 'none';
+  document.getElementById('receipt-preview').src = '';
+  document.getElementById('analyze-receipt-btn').style.display = 'none';
+  document.getElementById('analyze-status').textContent = '';
+  document.getElementById('receipt-file-input').value = '';
+  document.getElementById('split-tx-info').innerHTML =
+    `<strong>${esc(t.description)}</strong> &nbsp;·&nbsp; ${t.date} &nbsp;·&nbsp; <span style="color:var(--red);font-weight:600">${fmt(t.amount)}</span>`;
+  document.getElementById('split-date').value = t.date || todayStr();
+  // Seed one line item with the full amount
+  document.getElementById('split-lines-list').innerHTML = '';
+  addSplitLine(t.description, Math.abs(t.amount), t.category);
+  updateSplitTotal();
+  document.getElementById('split-receipt-modal').classList.add('open');
+}
+function closeSplitModal() {
+  document.getElementById('split-receipt-modal').classList.remove('open');
+  splittingTxId = null; receiptBase64 = null;
+}
+
+function handleReceiptUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    receiptBase64 = dataUrl.split(',')[1];
+    if (file.type.startsWith('image/')) {
+      const img = document.getElementById('receipt-preview');
+      img.src = dataUrl; img.style.display = 'block';
+    }
+    document.getElementById('analyze-receipt-btn').style.display = 'block';
+    document.getElementById('analyze-status').textContent = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeReceipt() {
+  if (!receiptBase64) return;
+  if (!openAIKey) {
+    alert('Add your OpenAI API key in Settings first.');
+    closeSplitModal();
+    switchPage('settings');
+    return;
+  }
+  const statusEl = document.getElementById('analyze-status');
+  const btn = document.getElementById('analyze-receipt-btn');
+  btn.disabled = true; btn.textContent = 'Analyzing…';
+  statusEl.textContent = 'Sending to OpenAI…';
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 2500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Analyze this receipt. Return ONLY a JSON object with: "date" (receipt date in YYYY-MM-DD format) and "items" (array of every individual line item). Each item must have: "description" (the FULL item name exactly as printed on the receipt — do not abbreviate, shorten, or group items together), "amount" (number, positive), "category" (your best guess from: ' + CAT_OPTIONS.join(', ') + '). Rules: (1) List EVERY line item separately — one object per item. (2) Use the full name as printed, e.g. "DOS XX LIME" not "Drinks". (3) Do not group or summarize. (4) Extract the exact date from the receipt. Return ONLY the JSON, no markdown. Example: {"date":"2026-06-21","items":[{"description":"DOS XX LIME","amount":3.66,"category":"Food"},{"description":"TODDLER TOY","amount":10.97,"category":"Baby"}]}' },
+            { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + receiptBase64, detail: 'high' } }
+          ]
+        }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    let raw = data.choices[0].message.content.trim();
+    raw = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
+    // Support both new {date, items} format and legacy [] format
+    let items, receiptDate;
+    const objMatch = raw.match(/\{[\s\S]*\}/);
+    const arrMatch = raw.match(/\[[\s\S]*\]/);
+    if (objMatch) {
+      const parsed = JSON.parse(objMatch[0]);
+      items = parsed.items || [];
+      receiptDate = parsed.date || null;
+    } else if (arrMatch) {
+      items = JSON.parse(arrMatch[0]);
+    }
+    if (!items || !items.length) throw new Error('Could not parse AI response.');
+    if (receiptDate) document.getElementById('split-date').value = receiptDate;
+    document.getElementById('split-lines-list').innerHTML = '';
+    items.forEach(item => addSplitLine(item.description, item.amount, item.category));
+    updateSplitTotal();
+    statusEl.textContent = `Found ${items.length} line item groups${receiptDate ? ' · Date: ' + receiptDate : ''}. Adjust as needed.`;
+    statusEl.style.color = 'var(--green)';
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ Analyze with AI';
+  }
+}
+
+let splitLineId = 0;
+function addSplitLine(desc = '', amount = '', category = 'Other') {
+  const id = ++splitLineId;
+  const opts = CAT_OPTIONS.map(c => `<option value="${c}"${c===category?' selected':''}>${c}</option>`).join('');
+  const row = document.createElement('div');
+  row.id = 'split-line-' + id;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 100px 140px 32px;gap:8px;margin-bottom:8px;align-items:center';
+  row.innerHTML = `
+    <input placeholder="Description" value="${esc(String(desc))}" oninput="updateSplitTotal()" style="padding:6px 10px;font-size:13px" />
+    <input type="number" placeholder="0.00" step="0.01" value="${amount}" oninput="updateSplitTotal()" style="padding:6px 10px;font-size:13px" />
+    <select style="padding:6px 10px;font-size:13px">${opts}</select>
+    <button class="btn btn-danger btn-sm" onclick="removeSplitLine(${id})" style="padding:6px 8px">✕</button>`;
+  document.getElementById('split-lines-list').appendChild(row);
+  updateSplitTotal();
+}
+function removeSplitLine(id) {
+  const el = document.getElementById('split-line-' + id);
+  if (el) el.remove();
+  updateSplitTotal();
+}
+function updateSplitTotal() {
+  const rows = document.querySelectorAll('#split-lines-list > div');
+  let total = 0;
+  rows.forEach(row => {
+    const amt = parseFloat(row.querySelectorAll('input')[1].value) || 0;
+    total += amt;
+  });
+  document.getElementById('split-total').textContent = fmt(-total);
+  const orig = state.transactions.find(x => String(x.id) === String(splittingTxId));
+  if (orig) {
+    const diff = Math.abs(orig.amount) - total;
+    const remEl = document.getElementById('split-remaining');
+    if (Math.abs(diff) > 0.01) {
+      remEl.textContent = diff > 0 ? `($${diff.toFixed(2)} unaccounted)` : `($${Math.abs(diff).toFixed(2)} over)`;
+      remEl.style.color = 'var(--yellow)';
+    } else {
+      remEl.textContent = '✓ Balanced';
+      remEl.style.color = 'var(--green)';
+    }
+  }
+}
+function confirmSplit() {
+  const orig = state.transactions.find(x => String(x.id) === String(splittingTxId));
+  if (!orig) return;
+  const rows = document.querySelectorAll('#split-lines-list > div');
+  if (!rows.length) return alert('Add at least one line item.');
+  const splits = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const desc = inputs[0].value.trim();
+    const amt = parseFloat(inputs[1].value);
+    const cat = row.querySelector('select').value;
+    if (desc && amt > 0) splits.push({ desc, amt, cat });
+  });
+  if (!splits.length) return alert('Fill in at least one valid line item.');
+  // Remove original, insert splits
+  const splitDate = document.getElementById('split-date').value || orig.date;
+  const idx = state.transactions.findIndex(x => String(x.id) === String(splittingTxId));
+  const splitGroupId = Date.now();
+  const newTx = splits.map((s, i) => ({
+    id: splitGroupId + i,
+    date: splitDate,
+    description: s.desc,
+    amount: -Math.abs(s.amt),
+    category: s.cat,
+    account: orig.account,
+    splitFrom: orig.description
+  }));
+  state.transactions.splice(idx, 1, ...newTx);
+  logActivity('split', `Split "${orig.description}" (${fmt(orig.amount)}) into ${splits.length} items: ${splits.map(s => s.cat).join(', ')}`);
+  save();
+  closeSplitModal();
+  renderTransactions();
+  renderDashboard();
+}
+
+let syncConfig = { apiKey: '', binId: '' };
+
+function loadSyncConfig() {
+  try {
+    const raw = localStorage.getItem('cashflow_sync');
+    if (raw) syncConfig = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveSyncConfig() {
+  syncConfig.apiKey = document.getElementById('sync-api-key').value.trim();
+  syncConfig.binId = document.getElementById('sync-bin-id').value.trim();
+  localStorage.setItem('cashflow_sync', JSON.stringify(syncConfig));
+  setSyncStatus('Credentials saved.', 'green');
+}
+
+function setSyncStatus(msg, color) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color === 'red' ? 'var(--red)' : color === 'green' ? 'var(--green)' : 'var(--muted)';
+}
+
+async function pushToCloud() {
+  const apiKey = document.getElementById('sync-api-key').value.trim() || syncConfig.apiKey;
+  const binId  = document.getElementById('sync-bin-id').value.trim()  || syncConfig.binId;
+  if (!apiKey) { setSyncStatus('Paste your Master API Key first.', 'red'); return; }
+
+  setSyncStatus('Pushing…', '');
+  try {
+    let res, data;
+    if (binId) {
+      // Update existing bin
+      res = await fetch('https://api.jsonbin.io/v3/b/' + binId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+        body: JSON.stringify({ ...state, _config: { openAIKey, binId, apiKey } })
+      });
+    } else {
+      // Create new bin
+      res = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey, 'X-Bin-Name': 'cashflow-planner', 'X-Bin-Private': 'true' },
+        body: JSON.stringify({ ...state, _config: { openAIKey, binId, apiKey } })
+      });
+    }
+    data = await res.json();
+    if (!res.ok) { setSyncStatus('Error: ' + (data.message || res.status), 'red'); return; }
+
+    // Save bin ID returned from create
+    const newBinId = binId || data.metadata?.id;
+    if (newBinId) {
+      syncConfig.apiKey = apiKey;
+      syncConfig.binId = newBinId;
+      localStorage.setItem('cashflow_sync', JSON.stringify(syncConfig));
+      document.getElementById('sync-bin-id').value = newBinId;
+    }
+    setSyncStatus('Pushed at ' + new Date().toLocaleTimeString(), 'green');
+  } catch(e) {
+    setSyncStatus('Network error. Check your internet connection.', 'red');
+  }
+}
+
+async function pullFromCloud() {
+  const apiKey = document.getElementById('sync-api-key').value.trim() || syncConfig.apiKey;
+  const binId  = document.getElementById('sync-bin-id').value.trim()  || syncConfig.binId;
+  if (!apiKey) { setSyncStatus('Paste your Master API Key first.', 'red'); return; }
+  if (!binId)  { setSyncStatus('No Bin ID — push from your other device first.', 'red'); return; }
+
+  setSyncStatus('Pulling…', '');
+  try {
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', {
+      headers: { 'X-Master-Key': apiKey }
+    });
+    const data = await res.json();
+    if (!res.ok) { setSyncStatus('Error: ' + (data.message || res.status), 'red'); return; }
+
+    const pulled = data.record;
+    state = {
+      accounts: pulled.accounts || [],
+      bills: pulled.bills || [],
+      income: pulled.income || [],
+      transactions: pulled.transactions || [],
+      budgets: (pulled.budgets && Object.keys(pulled.budgets).length) ? pulled.budgets : getDefaultBudgets(),
+      settings: Object.assign({ buffer: 200, lastImported: null }, pulled.settings || {}),
+      activity: pulled.activity || []
+    };
+    // Restore credentials if present
+    if (pulled._config) {
+      if (pulled._config.openAIKey) {
+        openAIKey = pulled._config.openAIKey;
+        localStorage.setItem('cashflow_openai', openAIKey);
+      }
+      if (pulled._config.binId && pulled._config.apiKey) {
+        syncConfig.apiKey = pulled._config.apiKey;
+        syncConfig.binId = pulled._config.binId;
+        localStorage.setItem('cashflow_sync', JSON.stringify(syncConfig));
+        document.getElementById('sync-api-key').value = syncConfig.apiKey;
+        document.getElementById('sync-bin-id').value = syncConfig.binId;
+      }
+    }
+    save();
+    renderDashboard(); renderAccounts(); renderBills(); renderIncome();
+    renderTransactions(); renderBudgets(); renderSettings();
+    updateImportAccountSelect();
+    setSyncStatus('Pulled at ' + new Date().toLocaleTimeString(), 'green');
+  } catch(e) {
+    setSyncStatus('Network error. Check your internet connection.', 'red');
+  }
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (editingTxId !== null) closeModal();
+    if (editingBillId !== null) closeEditBillModal();
+  }
+});
+
+load();
+loadSyncConfig();
+loadOpenAIKey();
+updateUndoButton();
+renderDashboard();
+updateImportAccountSelect();
+renderSettings();
+</script>
+</body>
+</html>
