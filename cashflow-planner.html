@@ -1387,7 +1387,7 @@ function confirmImport() {
   const newTx = [...fromPreview, ...fromRest];
   const skipped = pendingImport.length - newTx.length;
   state.transactions.push(...newTx);
-  state.transactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+  state.transactions.sort((a,b) => parseLocalDateStr(b.date) - parseLocalDateStr(a.date));
   logActivity('import', `Imported ${newTx.length} transactions (${skipped} skipped)`);
   save();
   pendingImport = [];
