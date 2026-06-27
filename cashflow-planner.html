@@ -1471,7 +1471,7 @@ function renderTransactions() {
     <tr>
       <td><input type="checkbox" class="tx-checkbox" data-id="${t.id}" onchange="onTxCheckChange()" /></td>
       <td style="white-space:nowrap">${t.date}</td>
-      <td>${esc(t.description.substring(0,60))}${t.splitFrom ? ` <span style="font-size:10px;background:var(--accent2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px" title="Split from: ${esc(t.splitFrom)}">split</span>` : ''}</td>
+      <td>${esc(t.description.substring(0,60))}${t.splitFrom ? ` <span style="font-size:10px;background:var(--accent2);color:#0f1117;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px" title="Split from: ${esc(t.splitFrom)}">split</span>` : ''}</td>
       <td style="color:var(--muted);font-size:12px">${esc(accMap[t.account]||'—')}</td>
       <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600;white-space:nowrap">${fmt(t.amount)}</td>
       <td>${catBadge(t.category)}</td>
