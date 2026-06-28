@@ -998,6 +998,39 @@ function deleteAccount(id) {
   state.accounts = state.accounts.filter(x => x.id !== id);
   save(); renderAccounts(); updateImportAccountSelect(); renderDashboard();
 }
+function editCreditCard(id) {
+  const a = state.accounts.find(x => x.id === id);
+  if (!a) return;
+  const limit = prompt(`Credit limit for ${a.name}:`, a.creditLimit || '');
+  if (limit === null) return;
+  const dueDay = prompt(`Due day of month (e.g. 15):`, a.dueDay || '');
+  if (dueDay === null) return;
+  const minPay = prompt(`Minimum payment ($):`, a.minPayment || '');
+  if (minPay === null) return;
+  a.creditLimit = parseFloat(limit) || 0;
+  a.dueDay = parseInt(dueDay) || null;
+  a.minPayment = parseFloat(minPay) || null;
+  // Create or update the monthly bill
+  if (a.dueDay && a.minPayment) {
+    const existingBill = state.bills.find(b => b.name === `${a.name} - Min Payment`);
+    if (existingBill) {
+      existingBill.amount = a.minPayment;
+      existingBill.day = a.dueDay;
+    } else {
+      state.bills.push({
+        id: Date.now(),
+        name: `${a.name} - Min Payment`,
+        amount: a.minPayment,
+        frequency: 'monthly',
+        day: a.dueDay,
+        category: 'Credit Card',
+        nextDate: null,
+        paidUntil: null
+      });
+    }
+  }
+  save(); renderAccounts(); renderBills(); renderDashboard();
+}
 function updateImportAccountSelect() {
   const sel = document.getElementById('import-account');
   sel.innerHTML = '<option value="">— Select account —</option>' +
