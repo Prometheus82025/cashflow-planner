@@ -1987,7 +1987,12 @@ function renderForecast() {
     const totalIncome = incomes.reduce((s,e) => s + e.amount, 0);
     const minBalIdx = balances.indexOf(Math.min(...balances));
     const minBalDate = new Date(now); minBalDate.setDate(minBalDate.getDate() + minBalIdx);
-    const topBills = [...bills].sort((a,b) => a.amount - b.amount).slice(0,3);
+    // Deduplicate bills by name — show single biggest occurrence per bill name
+    const billByName = {};
+    for (const e of bills) {
+      if (!billByName[e.label] || e.amount < billByName[e.label].amount) billByName[e.label] = e;
+    }
+    const topBills = Object.values(billByName).sort((a,b) => a.amount - b.amount).slice(0,3);
     const direction = netChange >= 0 ? 'up' : 'down';
     const dirColor = netChange >= 0 ? 'var(--green)' : 'var(--red)';
     let summary = `Over the next 60 days, your balance is projected to go <strong style="color:${dirColor}">${direction} ${fmt(Math.abs(netChange))}</strong>. `;
