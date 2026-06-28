@@ -897,16 +897,30 @@ function switchPage(p) {
 }
 
 // ─── ACCOUNTS ────────────────────────────────────────────────────────────────
+function toggleCreditLimitField() {
+  const type = document.getElementById('acc-type').value;
+  const wrap = document.getElementById('acc-credit-limit-wrap');
+  const label = document.getElementById('acc-balance-label');
+  if (type === 'credit') {
+    wrap.style.display = '';
+    label.textContent = 'Amount Owed ($)';
+  } else {
+    wrap.style.display = 'none';
+    label.textContent = 'Current Balance ($)';
+  }
+}
 function addAccount() {
   const name = document.getElementById('acc-name').value.trim();
   const type = document.getElementById('acc-type').value;
   const balance = parseFloat(document.getElementById('acc-balance').value) || 0;
+  const creditLimit = type === 'credit' ? (parseFloat(document.getElementById('acc-credit-limit').value) || 0) : null;
   if (!name) return alert('Enter an account name.');
-  state.accounts.push({ id: Date.now(), name, type, balance });
+  state.accounts.push({ id: Date.now(), name, type, balance, creditLimit });
   logActivity('account', `Added account: ${name} (${fmt(balance)})`);
   save();
   document.getElementById('acc-name').value = '';
   document.getElementById('acc-balance').value = '';
+  document.getElementById('acc-credit-limit').value = '';
   renderAccounts();
   updateImportAccountSelect();
   renderDashboard();
