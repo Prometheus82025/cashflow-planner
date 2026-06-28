@@ -930,14 +930,33 @@ function addAccount() {
   const type = document.getElementById('acc-type').value;
   const balance = parseFloat(document.getElementById('acc-balance').value) || 0;
   const creditLimit = type === 'credit' ? (parseFloat(document.getElementById('acc-credit-limit').value) || 0) : null;
+  const dueDay = type === 'credit' ? (parseInt(document.getElementById('acc-credit-due').value) || null) : null;
+  const minPayment = type === 'credit' ? (parseFloat(document.getElementById('acc-credit-min').value) || null) : null;
   if (!name) return alert('Enter an account name.');
   state.accounts.push({ id: Date.now(), name, type, balance, creditLimit });
+  // Auto-create monthly bill for credit cards
+  if (type === 'credit' && dueDay && minPayment) {
+    state.bills.push({
+      id: Date.now() + 1,
+      name: `${name} - Min Payment`,
+      amount: minPayment,
+      frequency: 'monthly',
+      day: dueDay,
+      category: 'Credit Card',
+      nextDate: null,
+      paidUntil: null
+    });
+    logActivity('bill', `Auto-created bill: ${name} - Min Payment (${fmt(minPayment)}, due day ${dueDay})`);
+  }
   logActivity('account', `Added account: ${name} (${fmt(balance)})`);
   save();
   document.getElementById('acc-name').value = '';
   document.getElementById('acc-balance').value = '';
   document.getElementById('acc-credit-limit').value = '';
+  document.getElementById('acc-credit-due').value = '';
+  document.getElementById('acc-credit-min').value = '';
   renderAccounts();
+  renderBills();
   updateImportAccountSelect();
   renderDashboard();
 }
