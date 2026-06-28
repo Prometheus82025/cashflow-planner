@@ -1006,8 +1006,13 @@ function isBillPaid(b) {
 function markBillPaid(id) {
   const b = state.bills.find(x => x.id === id);
   if (!b) return;
-  const acct = state.accounts.find(a => a.name.toLowerCase() === 'personal') || state.accounts[0];
-  if (!acct) { alert('Add an account first before marking bills paid.'); return; }
+  if (!state.accounts.length) { alert('Add an account first before marking bills paid.'); return; }
+  const opts = state.accounts.map((a, i) => `${i}: ${a.name} (${fmt(a.balance)})`).join('\n');
+  const input = prompt(`Deduct ${fmt(b.amount)} from which account?\n\n${opts}\n\nEnter the number:`);
+  if (input === null) return;
+  const idx = parseInt(input);
+  const acct = state.accounts[idx];
+  if (!acct) { alert('Invalid selection.'); return; }
   acct.balance = (acct.balance || 0) - b.amount;
   state.transactions.push({
     id: Date.now(),
