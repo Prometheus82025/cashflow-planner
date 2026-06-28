@@ -1837,6 +1837,45 @@ function renderForecast() {
     }
   });
 
+  // Forecast analysis
+  const summaryEl = document.getElementById('forecast-summary');
+  const keyEventsEl = document.getElementById('forecast-key-events');
+  if (events.length) {
+    // Summary paragraph
+    const bills = events.filter(e => e.type === 'bill');
+    const incomes = events.filter(e => e.type === 'income');
+    const totalBills = bills.reduce((s,e) => s + Math.abs(e.amount), 0);
+    const totalIncome = incomes.reduce((s,e) => s + e.amount, 0);
+    const minBalIdx = balances.indexOf(Math.min(...balances));
+    const minBalDate = new Date(now); minBalDate.setDate(minBalDate.getDate() + minBalIdx);
+    const topBills = [...bills].sort((a,b) => a.amount - b.amount).slice(0,3);
+    const direction = netChange >= 0 ? 'up' : 'down';
+    const dirColor = netChange >= 0 ? 'var(--green)' : 'var(--red)';
+    let summary = `Over the next 60 days, your balance is projected to go <strong style="color:${dirColor}">${direction} ${fmt(Math.abs(netChange))}</strong>. `;
+    summary += `You have <strong style="color:var(--red)">${fmt(totalBills)}</strong> in bills going out and <strong style="color:var(--green)">${fmt(totalIncome)}</strong> in income coming in. `;
+    if (topBills.length) summary += `Your biggest expenses are ${topBills.map(b => `<strong>${esc(b.label)}</strong> (${fmt(Math.abs(b.amount))})`).join(', ')}. `;
+    if (minBal < startBalance) summary += `Your lowest point will be <strong style="color:${minBal < 0 ? 'var(--red)' : 'var(--yellow)'}">${fmt(minBal)}</strong> around <strong>${minBalDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</strong>.`;
+    summaryEl.innerHTML = summary;
+
+    // Key events list — top 5 bills + all income, sorted by date
+    const keyEvents = [
+      ...bills.sort((a,b) => a.amount - b.amount).slice(0,5),
+      ...incomes
+    ].sort((a,b) => a.date - b.date);
+    keyEventsEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">` +
+      keyEvents.map(e => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600;font-size:14px">${esc(e.label)}</div>
+            <div style="font-size:12px;color:var(--muted)">${e.date.toLocaleDateString('en-US',{month:'short',day:'numeric',weekday:'short'})}</div>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:${e.amount < 0 ? 'var(--red)' : 'var(--green)'}">${fmt(e.amount)}</div>
+        </div>`).join('') + `</div>`;
+  } else {
+    summaryEl.innerHTML = '<span style="color:var(--muted)">Add bills and income to see your forecast analysis.</span>';
+    keyEventsEl.innerHTML = '';
+  }
+
   // Forecast table
   const tbody = document.getElementById('forecast-table-body');
   if (!events.length) {
