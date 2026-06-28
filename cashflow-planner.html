@@ -1647,6 +1647,25 @@ function renderDashboard() {
   document.getElementById('dash-balance').textContent = fmt(totalBalance);
   document.getElementById('dash-accounts-count').textContent = `across ${state.accounts.length} account${state.accounts.length===1?'':'s'}`;
 
+  // Credit card summary
+  const creditCards = state.accounts.filter(a => a.type === 'credit' && a.creditLimit);
+  const creditRow = document.getElementById('dash-credit-row');
+  if (creditCards.length) {
+    creditRow.style.display = '';
+    const totalLimit = creditCards.reduce((s,a) => s + a.creditLimit, 0);
+    const totalUsed = creditCards.reduce((s,a) => s + a.balance, 0);
+    const totalAvail = totalLimit - totalUsed;
+    const util = totalLimit ? Math.round(totalUsed / totalLimit * 100) : 0;
+    document.getElementById('dash-credit-available').textContent = fmt(totalAvail);
+    document.getElementById('dash-credit-sub').textContent = `across ${creditCards.length} credit card${creditCards.length===1?'':'s'}`;
+    document.getElementById('dash-credit-used').textContent = fmt(totalUsed);
+    document.getElementById('dash-credit-util').textContent = `${util}% utilization`;
+    document.getElementById('dash-credit-util').style.color = util > 80 ? 'var(--red)' : util > 50 ? 'var(--yellow)' : 'var(--green)';
+    document.getElementById('dash-credit-limit').textContent = fmt(totalLimit);
+  } else {
+    creditRow.style.display = 'none';
+  }
+
   // Upcoming bills — 14-day window for list + stat card
   const now = new Date();
   const in14 = new Date(now); in14.setDate(in14.getDate()+14);
