@@ -929,19 +929,28 @@ function addAccount() {
 function renderAccounts() {
   const tbody = document.getElementById('accounts-table-body');
   if (!state.accounts.length) {
-    tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><div class="empty-icon">🏦</div>No accounts yet.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-icon">🏦</div>No accounts yet.</div></td></tr>';
     return;
   }
-  tbody.innerHTML = state.accounts.map(a => `
-    <tr>
+  tbody.innerHTML = state.accounts.map(a => {
+    const isCredit = a.type === 'credit';
+    const availCredit = isCredit && a.creditLimit ? a.creditLimit - a.balance : null;
+    const balColor = isCredit ? 'var(--red)' : a.balance < 0 ? 'var(--red)' : 'var(--green)';
+    const availHtml = isCredit && availCredit !== null
+      ? `<span style="color:${availCredit < 0 ? 'var(--red)' : 'var(--green)'};font-weight:600">${fmt(availCredit)}</span>
+         <div style="font-size:11px;color:var(--muted)">of ${fmt(a.creditLimit)} limit</div>`
+      : '<span style="color:var(--muted)">—</span>';
+    return `<tr>
       <td><strong>${esc(a.name)}</strong></td>
-      <td><span class="badge ${a.type==='credit'?'badge-red':a.type==='savings'?'badge-green':'badge-yellow'}">${a.type}</span></td>
-      <td><span style="color:${a.balance<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(a.balance)}</span></td>
+      <td><span class="badge ${isCredit?'badge-red':a.type==='savings'?'badge-green':'badge-yellow'}">${a.type}</span></td>
+      <td><span style="color:${balColor};font-weight:600">${fmt(a.balance)}</span>${isCredit ? '<div style="font-size:11px;color:var(--muted)">owed</div>' : ''}</td>
+      <td>${availHtml}</td>
       <td>
         <input type="number" value="${a.balance}" style="width:120px;margin-right:8px" onchange="updateAccountBalance(${a.id}, this.value)" step="0.01" />
         <button class="btn btn-danger btn-sm" onclick="deleteAccount(${a.id})">Remove</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function updateAccountBalance(id, val) {
