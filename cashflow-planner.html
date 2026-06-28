@@ -1849,6 +1849,15 @@ function generateForecastEvents() {
   // Bills
   for (const b of state.bills) {
     let d = nextDueDateForBill(b);
+    // If already paid for this cycle, skip to the next due date
+    if (isBillPaid(b)) {
+      const freq = b.frequency;
+      if (!freq || freq === 'monthly') {
+        d = new Date(d.getFullYear(), d.getMonth()+1, b.day);
+      } else {
+        d = new Date(d); d.setDate(d.getDate() + (freq === 'weekly' ? 7 : 14));
+      }
+    }
     let safety = 0;
     while (d <= end && safety++ < 500) {
       events.push({ date: new Date(d), label: b.name, type: 'bill', amount: -b.amount, category: b.category });
