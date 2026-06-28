@@ -975,7 +975,7 @@ function renderAccounts() {
       ? `<span style="color:${availCredit < 0 ? 'var(--red)' : 'var(--green)'};font-weight:600">${fmt(availCredit)}</span>
          <div style="font-size:11px;color:var(--muted)">of ${fmt(a.creditLimit)} limit</div>`
       : '<span style="color:var(--muted)">—</span>';
-    return `<tr>
+    return `<tr data-acc-id="${a.id}">
       <td><strong>${esc(a.name)}</strong></td>
       <td><span class="badge ${isCredit?'badge-red':a.type==='savings'?'badge-green':'badge-yellow'}">${a.type}</span></td>
       <td><span style="color:${balColor};font-weight:600">${fmt(a.balance)}</span>${isCredit ? '<div style="font-size:11px;color:var(--muted)">owed</div>' : ''}</td>
