@@ -1006,8 +1006,27 @@ function isBillPaid(b) {
 function markBillPaid(id) {
   const b = state.bills.find(x => x.id === id);
   if (!b) return;
+  if (!state.accounts.length) { alert('Add an account first before marking bills paid.'); return; }
+  // Ask which account to deduct from
+  const opts = state.accounts.map((a, i) => `${i}: ${a.name} (${fmt(a.balance)})`).join('\n');
+  const input = prompt(`Deduct $${b.amount.toFixed(2)} from which account?\n\n${opts}\n\nEnter the number:`);
+  if (input === null) return; // cancelled
+  const idx = parseInt(input);
+  const acct = state.accounts[idx];
+  if (!acct) { alert('Invalid account number.'); return; }
+  // Deduct from account
+  acct.balance = (acct.balance || 0) - b.amount;
+  // Record transaction
+  state.transactions.push({
+    id: Date.now(),
+    date: todayStr(),
+    description: `${b.name} (bill payment)`,
+    amount: -b.amount,
+    category: b.category || 'Bills',
+    account: acct.name
+  });
   b.paidUntil = dateToStr(nextDueDateForBill(b));
-  save(); renderBills(); renderDashboard();
+  save(); renderBills(); renderAccounts(); renderDashboard();
 }
 function markBillUnpaid(id) {
   const b = state.bills.find(x => x.id === id);
