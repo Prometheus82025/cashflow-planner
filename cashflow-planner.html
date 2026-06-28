@@ -919,15 +919,11 @@ function switchPage(p) {
 // ─── ACCOUNTS ────────────────────────────────────────────────────────────────
 function toggleCreditLimitField() {
   const type = document.getElementById('acc-type').value;
-  const wrap = document.getElementById('acc-credit-limit-wrap');
-  const label = document.getElementById('acc-balance-label');
-  if (type === 'credit') {
-    wrap.style.display = '';
-    label.textContent = 'Amount Owed ($)';
-  } else {
-    wrap.style.display = 'none';
-    label.textContent = 'Current Balance ($)';
-  }
+  const isCredit = type === 'credit';
+  document.getElementById('acc-credit-limit-wrap').style.display = isCredit ? '' : 'none';
+  document.getElementById('acc-credit-due-wrap').style.display = isCredit ? '' : 'none';
+  document.getElementById('acc-credit-min-wrap').style.display = isCredit ? '' : 'none';
+  document.getElementById('acc-balance-label').textContent = isCredit ? 'Amount Owed ($)' : 'Current Balance ($)';
 }
 function addAccount() {
   const name = document.getElementById('acc-name').value.trim();
