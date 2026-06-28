@@ -981,7 +981,8 @@ function renderAccounts() {
       <td><span style="color:${balColor};font-weight:600">${fmt(a.balance)}</span>${isCredit ? '<div style="font-size:11px;color:var(--muted)">owed</div>' : ''}</td>
       <td>${availHtml}</td>
       <td>
-        <input type="number" value="${a.balance}" style="width:120px;margin-right:8px" onchange="updateAccountBalance(${a.id}, this.value)" step="0.01" />
+        <input type="number" value="${a.balance}" style="width:100px;margin-right:6px" onchange="updateAccountBalance(${a.id}, this.value)" step="0.01" />
+        ${isCredit ? `<button class="btn btn-ghost btn-sm" onclick="editCreditCard(${a.id})" style="margin-right:6px">Edit</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick="deleteAccount(${a.id})">Remove</button>
       </td>
     </tr>`;
