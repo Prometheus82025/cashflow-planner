@@ -1859,9 +1859,19 @@ function generateForecastEvents() {
   const end = new Date(now); end.setDate(end.getDate()+60);
 
   // Bills
+  const now0 = new Date(); now0.setHours(0,0,0,0);
   for (const b of state.bills) {
     let d = nextDueDateForBill(b);
-    // If already paid for this cycle, skip to the next due date
+
+    // One-time bills: handle first — skip entirely if paid, otherwise add once if in window
+    if (b.frequency === 'once') {
+      if (!isBillPaid(b) && d >= now0 && d <= end) {
+        events.push({ date: new Date(d), label: b.name, type: 'bill', amount: -b.amount, category: b.category });
+      }
+      continue;
+    }
+
+    // Recurring: if already paid for this cycle, advance to the next occurrence
     if (isBillPaid(b)) {
       const freq = b.frequency;
       if (!freq || freq === 'monthly') {
@@ -1869,14 +1879,6 @@ function generateForecastEvents() {
       } else {
         d = new Date(d); d.setDate(d.getDate() + (freq === 'weekly' ? 7 : 14));
       }
-    }
-    // One-time bills: add once if within the forecast window and not yet paid
-    if (b.frequency === 'once') {
-      const now2 = new Date(); now2.setHours(0,0,0,0);
-      if (d >= now2 && d <= end) {
-        events.push({ date: new Date(d), label: b.name, type: 'bill', amount: -b.amount, category: b.category });
-      }
-      continue;
     }
     let safety = 0;
     while (d <= end && safety++ < 500) {
