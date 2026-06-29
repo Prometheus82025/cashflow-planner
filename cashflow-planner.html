@@ -352,7 +352,14 @@
     <div class="table-wrap">
       <div class="table-header"><h3>Your Recurring Bills</h3><span id="bills-total-label" style="color:var(--muted);font-size:13px;"></span></div>
       <div class="table-scroll"><table>
-        <thead><tr><th>Bill</th><th>Category</th><th>Frequency</th><th>Amount</th><th>Next Due</th><th>Actions</th></tr></thead>
+        <thead><tr id="bills-thead">
+          <th onclick="setBillSort('name')" style="cursor:pointer;user-select:none">Bill <span id="sort-bill-name"></span></th>
+          <th onclick="setBillSort('category')" style="cursor:pointer;user-select:none">Category <span id="sort-bill-category"></span></th>
+          <th onclick="setBillSort('frequency')" style="cursor:pointer;user-select:none">Frequency <span id="sort-bill-frequency"></span></th>
+          <th onclick="setBillSort('amount')" style="cursor:pointer;user-select:none">Amount <span id="sort-bill-amount"></span></th>
+          <th onclick="setBillSort('due')" style="cursor:pointer;user-select:none">Next Due <span id="sort-bill-due"></span></th>
+          <th>Actions</th>
+        </tr></thead>
         <tbody id="bills-table-body">
           <tr><td colspan="6"><div class="empty"><div class="empty-icon">📄</div>No bills yet.</div></td></tr>
         </tbody>
