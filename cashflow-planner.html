@@ -2639,6 +2639,11 @@ updateUndoButton();
 renderDashboard();
 updateImportAccountSelect();
 renderSettings();
+// Auto-pull on load if credentials are configured
+if (syncConfig.apiKey && syncConfig.binId) {
+  setSyncStatus('Syncing…', 'var(--muted)');
+  pullFromCloud(true);
+}
 </script>
 </body>
 </html>
