@@ -2527,12 +2527,12 @@ function setSyncStatus(msg, color) {
   el.style.color = color === 'red' ? 'var(--red)' : color === 'green' ? 'var(--green)' : 'var(--muted)';
 }
 
-async function pushToCloud() {
+async function pushToCloud(silent = false) {
   const apiKey = document.getElementById('sync-api-key').value.trim() || syncConfig.apiKey;
   const binId  = document.getElementById('sync-bin-id').value.trim()  || syncConfig.binId;
-  if (!apiKey) { setSyncStatus('Paste your Master API Key first.', 'red'); return; }
+  if (!apiKey) { if (!silent) setSyncStatus('Paste your Master API Key first.', 'red'); return; }
 
-  setSyncStatus('Pushing…', '');
+  if (!silent) setSyncStatus('Pushing…', '');
   try {
     let res, data;
     if (binId) {
