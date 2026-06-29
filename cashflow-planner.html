@@ -1065,6 +1065,14 @@ function updateImportAccountSelect() {
 }
 
 // ─── BILLS ───────────────────────────────────────────────────────────────────
+let billSortCol = 'due', billSortDir = 1; // 1 = asc, -1 = desc
+
+function setBillSort(col) {
+  if (billSortCol === col) billSortDir *= -1;
+  else { billSortCol = col; billSortDir = 1; }
+  renderBills();
+}
+
 function toggleBillDueField() {
   const freq = document.getElementById('bill-frequency').value;
   const isMonthly = freq === 'monthly';
