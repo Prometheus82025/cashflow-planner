@@ -2551,7 +2551,7 @@ async function pushToCloud(silent = false) {
       });
     }
     data = await res.json();
-    if (!res.ok) { setSyncStatus('Error: ' + (data.message || res.status), 'red'); return; }
+    if (!res.ok) { setSyncStatus('Sync error: ' + (data.message || res.status), 'red'); return; }
 
     // Save bin ID returned from create
     const newBinId = binId || data.metadata?.id;
@@ -2561,9 +2561,10 @@ async function pushToCloud(silent = false) {
       localStorage.setItem('cashflow_sync', JSON.stringify(syncConfig));
       document.getElementById('sync-bin-id').value = newBinId;
     }
-    setSyncStatus('Pushed at ' + new Date().toLocaleTimeString(), 'green');
+    setSyncStatus('Synced ' + new Date().toLocaleTimeString(), 'green');
   } catch(e) {
-    setSyncStatus('Network error. Check your internet connection.', 'red');
+    if (!silent) setSyncStatus('Network error. Check your internet connection.', 'red');
+    else setSyncStatus('Sync failed — will retry on next change.', 'var(--yellow)');
   }
 }
 
