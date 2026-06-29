@@ -2606,11 +2606,13 @@ async function pullFromCloud(silent = false) {
         document.getElementById('sync-bin-id').value = syncConfig.binId;
       }
     }
-    save();
+    // Save locally without triggering another auto-push
+    clearTimeout(_autoSyncTimer);
+    localStorage.setItem('cashflow_v2', JSON.stringify(state));
     renderDashboard(); renderAccounts(); renderBills(); renderIncome();
     renderTransactions(); renderBudgets(); renderSettings();
     updateImportAccountSelect();
-    setSyncStatus('Pulled at ' + new Date().toLocaleTimeString(), 'green');
+    setSyncStatus('Synced ' + new Date().toLocaleTimeString(), 'green');
   } catch(e) {
     setSyncStatus('Network error. Check your internet connection.', 'red');
   }
