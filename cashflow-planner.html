@@ -1202,7 +1202,23 @@ function renderBills() {
   }, 0);
   totalLabel.textContent = `~${fmt(monthlyEq)}/mo`;
 
-  const sorted = [...state.bills].sort((a,b) => nextDueDateForBill(a) - nextDueDateForBill(b));
+  // Update sort indicators
+  ['name','category','frequency','amount','due'].forEach(col => {
+    const el = document.getElementById(`sort-bill-${col}`);
+    if (el) el.textContent = billSortCol === col ? (billSortDir === 1 ? ' ▲' : ' ▼') : '';
+  });
+
+  const sorted = [...state.bills].sort((a, b) => {
+    let av, bv;
+    if (billSortCol === 'name')      { av = a.name.toLowerCase(); bv = b.name.toLowerCase(); }
+    else if (billSortCol === 'category') { av = (a.category||'').toLowerCase(); bv = (b.category||'').toLowerCase(); }
+    else if (billSortCol === 'frequency') { av = (a.frequency||'monthly'); bv = (b.frequency||'monthly'); }
+    else if (billSortCol === 'amount') { av = a.amount; bv = b.amount; }
+    else { av = nextDueDateForBill(a); bv = nextDueDateForBill(b); }
+    if (av < bv) return -1 * billSortDir;
+    if (av > bv) return 1 * billSortDir;
+    return 0;
+  });
   tbody.innerHTML = sorted.map(b => {
     const next = nextDueDateForBill(b);
     const days = daysUntil(next);
