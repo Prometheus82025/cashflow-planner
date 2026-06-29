@@ -822,11 +822,18 @@ let editingTxId = null;
 let pendingImport = [];
 let forecastChart = null;
 
+let _autoSyncTimer = null;
 function save() {
   const prev = localStorage.getItem('cashflow_v2');
   if (prev) localStorage.setItem('cashflow_v2_undo', prev);
   localStorage.setItem('cashflow_v2', JSON.stringify(state));
   updateUndoButton();
+  // Debounced auto-push: waits 4s after the last change before pushing
+  if (syncConfig.apiKey && syncConfig.binId) {
+    clearTimeout(_autoSyncTimer);
+    setSyncStatus('Unsaved changes…', 'var(--yellow)');
+    _autoSyncTimer = setTimeout(() => pushToCloud(true), 4000);
+  }
 }
 function updateUndoButton() {
   const btn = document.getElementById('undo-btn');
