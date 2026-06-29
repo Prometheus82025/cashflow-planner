@@ -1870,6 +1870,14 @@ function generateForecastEvents() {
         d = new Date(d); d.setDate(d.getDate() + (freq === 'weekly' ? 7 : 14));
       }
     }
+    // One-time bills: add once if within the forecast window and not yet paid
+    if (b.frequency === 'once') {
+      const now2 = new Date(); now2.setHours(0,0,0,0);
+      if (d >= now2 && d <= end) {
+        events.push({ date: new Date(d), label: b.name, type: 'bill', amount: -b.amount, category: b.category });
+      }
+      continue;
+    }
     let safety = 0;
     while (d <= end && safety++ < 500) {
       events.push({ date: new Date(d), label: b.name, type: 'bill', amount: -b.amount, category: b.category });
