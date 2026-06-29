@@ -1063,6 +1063,8 @@ function toggleBillDueField() {
   const isMonthly = freq === 'monthly';
   document.getElementById('bill-day-wrap').style.display = isMonthly ? '' : 'none';
   document.getElementById('bill-date-wrap').style.display = isMonthly ? 'none' : '';
+  const dateLabel = document.querySelector('#bill-date-wrap label');
+  if (dateLabel) dateLabel.textContent = freq === 'once' ? 'Due Date' : 'Next Due Date';
 }
 
 function addBill() {
