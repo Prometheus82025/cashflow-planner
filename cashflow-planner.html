@@ -1201,6 +1201,16 @@ function renderBills() {
     totalLabel.textContent = '';
     return;
   }
+
+  // Populate category filter with categories actually in use
+  const filterEl = document.getElementById('bill-filter-category');
+  const currentFilter = filterEl ? filterEl.value : '';
+  const usedCats = [...new Set(state.bills.map(b => b.category).filter(Boolean))].sort();
+  if (filterEl) {
+    filterEl.innerHTML = '<option value="">All Categories</option>' +
+      usedCats.map(c => `<option value="${c}"${c === currentFilter ? ' selected' : ''}>${c}</option>`).join('');
+  }
+
   // Monthly total: biweekly ≈ 2.17×/mo, weekly ≈ 4.33×/mo; one-time bills excluded
   const monthlyEq = state.bills.reduce((s, b) => {
     const f = b.frequency;
