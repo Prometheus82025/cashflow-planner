@@ -2264,6 +2264,7 @@ function renderSettings() {
   document.getElementById('sync-api-key').value = syncConfig.apiKey || '';
   document.getElementById('sync-bin-id').value = syncConfig.binId || '';
   document.getElementById('openai-api-key').value = openAIKey || '';
+  updateSyncTimestamps();
 }
 
 function saveSettings() {
