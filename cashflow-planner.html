@@ -1166,6 +1166,7 @@ function freqLabel(b) {
   if (!b.frequency || b.frequency === 'monthly') return `Monthly (day ${b.day})`;
   if (b.frequency === 'biweekly') return 'Every 2 weeks';
   if (b.frequency === 'weekly') return 'Weekly';
+  if (b.frequency === 'once') return 'One Time';
   return b.frequency;
 }
 
