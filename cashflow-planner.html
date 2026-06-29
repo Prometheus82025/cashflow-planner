@@ -2571,7 +2571,10 @@ async function pushToCloud(silent = false) {
       localStorage.setItem('cashflow_sync', JSON.stringify(syncConfig));
       document.getElementById('sync-bin-id').value = newBinId;
     }
+    syncConfig.lastPushed = Date.now();
+    localStorage.setItem('cashflow_sync', JSON.stringify(syncConfig));
     setSyncStatus('Synced ' + new Date().toLocaleTimeString(), 'green');
+    updateSyncTimestamps();
   } catch(e) {
     if (!silent) setSyncStatus('Network error. Check your internet connection.', 'red');
     else setSyncStatus('Sync failed — will retry on next change.', 'var(--yellow)');
