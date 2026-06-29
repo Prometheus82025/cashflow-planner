@@ -1104,6 +1104,10 @@ function deleteBill(id) {
 // Returns the next occurrence of a bill on or after today
 function nextDueDateForBill(b) {
   const now = new Date(); now.setHours(0,0,0,0);
+  if (b.frequency === 'once') {
+    // One-time: return the stored date as-is (may be in the past if overdue)
+    return parseLocalDateStr(b.nextDate);
+  }
   if (!b.frequency || b.frequency === 'monthly') {
     // Legacy bills without frequency stored as monthly
     const day = b.day;
