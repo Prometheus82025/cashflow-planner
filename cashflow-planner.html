@@ -1235,6 +1235,8 @@ function toggleEditBillDueField() {
   const isMonthly = freq === 'monthly';
   document.getElementById('edit-bill-day-wrap').style.display = isMonthly ? '' : 'none';
   document.getElementById('edit-bill-date-wrap').style.display = isMonthly ? 'none' : '';
+  const dateLabel = document.querySelector('#edit-bill-date-wrap label');
+  if (dateLabel) dateLabel.textContent = freq === 'once' ? 'Due Date' : 'Next Due Date';
 }
 
 function saveEditBill() {
