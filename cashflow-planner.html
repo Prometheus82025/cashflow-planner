@@ -1178,9 +1178,10 @@ function renderBills() {
     totalLabel.textContent = '';
     return;
   }
-  // Monthly total: biweekly ≈ 2.17×/mo, weekly ≈ 4.33×/mo
+  // Monthly total: biweekly ≈ 2.17×/mo, weekly ≈ 4.33×/mo; one-time bills excluded
   const monthlyEq = state.bills.reduce((s, b) => {
     const f = b.frequency;
+    if (f === 'once') return s;
     const mult = f === 'weekly' ? 4.33 : f === 'biweekly' ? 2.17 : 1;
     return s + b.amount * mult;
   }, 0);
