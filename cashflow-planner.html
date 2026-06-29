@@ -2505,13 +2505,22 @@ function confirmSplit() {
   renderDashboard();
 }
 
-let syncConfig = { apiKey: '', binId: '' };
+let syncConfig = { apiKey: '', binId: '', lastPushed: null, lastPulled: null };
 
 function loadSyncConfig() {
   try {
     const raw = localStorage.getItem('cashflow_sync');
-    if (raw) syncConfig = JSON.parse(raw);
+    if (raw) syncConfig = Object.assign({ lastPushed: null, lastPulled: null }, JSON.parse(raw));
   } catch(e) {}
+}
+
+function updateSyncTimestamps() {
+  const el = document.getElementById('sync-timestamps');
+  if (!el) return;
+  const parts = [];
+  if (syncConfig.lastPushed) parts.push(`⬆️ Last pushed: ${new Date(syncConfig.lastPushed).toLocaleString()}`);
+  if (syncConfig.lastPulled) parts.push(`⬇️ Last pulled: ${new Date(syncConfig.lastPulled).toLocaleString()}`);
+  el.innerHTML = parts.join('<span style="color:var(--border)"> | </span>');
 }
 
 function saveSyncConfig() {
