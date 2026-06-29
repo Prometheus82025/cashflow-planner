@@ -2568,13 +2568,13 @@ async function pushToCloud(silent = false) {
   }
 }
 
-async function pullFromCloud() {
+async function pullFromCloud(silent = false) {
   const apiKey = document.getElementById('sync-api-key').value.trim() || syncConfig.apiKey;
   const binId  = document.getElementById('sync-bin-id').value.trim()  || syncConfig.binId;
-  if (!apiKey) { setSyncStatus('Paste your Master API Key first.', 'red'); return; }
-  if (!binId)  { setSyncStatus('No Bin ID — push from your other device first.', 'red'); return; }
+  if (!apiKey) { if (!silent) setSyncStatus('Paste your Master API Key first.', 'red'); return; }
+  if (!binId)  { if (!silent) setSyncStatus('No Bin ID — push from your other device first.', 'red'); return; }
 
-  setSyncStatus('Pulling…', '');
+  if (!silent) setSyncStatus('Pulling…', '');
   try {
     const res = await fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', {
       headers: { 'X-Master-Key': apiKey }
