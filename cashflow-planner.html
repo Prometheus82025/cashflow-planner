@@ -1237,6 +1237,10 @@ function renderBills() {
     if (av > bv) return 1 * billSortDir;
     return 0;
   }).filter(b => !currentFilter || b.category === currentFilter);
+  if (!sorted.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>No bills in this category.</div></td></tr>`;
+    return;
+  }
   tbody.innerHTML = sorted.map(b => {
     const next = nextDueDateForBill(b);
     const days = daysUntil(next);
