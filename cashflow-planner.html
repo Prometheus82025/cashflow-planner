@@ -2622,10 +2622,13 @@ async function pullFromCloud(silent = false) {
     // Save locally without triggering another auto-push
     clearTimeout(_autoSyncTimer);
     localStorage.setItem('cashflow_v2', JSON.stringify(state));
+    syncConfig.lastPulled = Date.now();
+    localStorage.setItem('cashflow_sync', JSON.stringify(syncConfig));
     renderDashboard(); renderAccounts(); renderBills(); renderIncome();
     renderTransactions(); renderBudgets(); renderSettings();
     updateImportAccountSelect();
     setSyncStatus('Synced ' + new Date().toLocaleTimeString(), 'green');
+    updateSyncTimestamps();
   } catch(e) {
     setSyncStatus('Network error. Check your internet connection.', 'red');
   }
