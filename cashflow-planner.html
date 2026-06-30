@@ -614,6 +614,18 @@
   <div id="budgets-list"></div>
 </div>
 
+<!-- BILL MATCH MODAL -->
+<div id="bill-match-modal" class="modal-overlay" style="z-index:200">
+  <div class="modal" style="max-width:620px;max-height:80vh;display:flex;flex-direction:column">
+    <h3>🔍 Bill Matches Found</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">These imported transactions look like they match unpaid bills. Confirm to mark them paid.</p>
+    <div id="bill-match-list" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px"></div>
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeBillMatchModal()">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div id="page-settings" class="page">
   <div class="section-title">Settings</div>
