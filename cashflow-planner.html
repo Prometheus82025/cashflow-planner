@@ -1699,15 +1699,10 @@ function showImportPreview() {
 }
 
 function confirmImport() {
-  const checkboxes = document.querySelectorAll('.import-checkbox:checked:not(:disabled)');
-  const selectedIdxs = new Set([...checkboxes].map(cb => Number(cb.dataset.idx)));
-  const exactSet = new Set(state.transactions.map(t => `${t.date}|${t.description}|${t.amount}`));
-  // Always skip exact dupes; only include checked items from preview
-  const preview = pendingImport.slice(0, 50);
-  const rest = pendingImport.slice(50); // items beyond preview are included automatically (no checkbox shown)
-  const fromPreview = preview.filter((t, i) => selectedIdxs.has(i) && isFuzzyDupe(t) !== 'exact');
-  const fromRest = rest.filter(t => !exactSet.has(`${t.date}|${t.description}|${t.amount}`));
-  const newTx = [...fromPreview, ...fromRest].map(t => ({ ...t, reviewed: false }));
+  // Skip both exact AND fuzzy dupes automatically — no manual checkbox needed
+  const newTx = pendingImport
+    .filter(t => !isFuzzyDupe(t))
+    .map(t => ({ ...t, reviewed: false }));
   const skipped = pendingImport.length - newTx.length;
   state.transactions.push(...newTx);
   state.transactions.sort((a,b) => parseLocalDateStr(b.date) - parseLocalDateStr(a.date));
