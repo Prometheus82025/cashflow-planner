@@ -1559,7 +1559,7 @@ async function processStatementWithAI(file) {
       date: item.date || todayStr(),
       description: item.description || 'Unknown',
       amount: Number(item.amount) || 0,
-      category: Number(item.amount) > 0 ? 'Income' : autoCategory(item.description || ''),
+      category: Number(item.amount) > 0 ? 'Income' : 'Other',
       account: accountId
     })).filter(t => t.description && t.amount !== 0);
 
