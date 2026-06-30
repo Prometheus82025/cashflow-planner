@@ -1748,6 +1748,55 @@ function onChangeTxType(id, type) {
   document.getElementById('tx-card-wrap-' + id).style.display = type === 'card'    ? '' : 'none';
 }
 
+function toggleAddBillForm(txId) {
+  const form = document.getElementById('tx-new-bill-form-' + txId);
+  if (!form) return;
+  form.style.display = form.style.display === 'none' || form.style.display === '' ? 'flex' : 'none';
+}
+
+function onNbFreqChange(txId, freq) {
+  const dayEl  = document.getElementById('nb-day-'  + txId);
+  const dateEl = document.getElementById('nb-date-' + txId);
+  const isMonthly = freq === 'monthly';
+  if (dayEl)  dayEl.style.display  = isMonthly ? '' : 'none';
+  if (dateEl) dateEl.style.display = isMonthly ? 'none' : '';
+}
+
+function addBillFromInbox(txId) {
+  const t = state.transactions.find(x => x.id === txId);
+  if (!t) return;
+  const name   = (document.getElementById('nb-name-'   + txId) || {}).value?.trim();
+  const amount = parseFloat((document.getElementById('nb-amount-' + txId) || {}).value);
+  const freq   = (document.getElementById('nb-freq-'   + txId) || {}).value || 'monthly';
+  const cat    = (document.getElementById('nb-cat-'    + txId) || {}).value || 'Other';
+  if (!name || !amount) { alert('Enter a bill name and amount.'); return; }
+
+  let day = null, nextDate = null;
+  if (freq === 'monthly') {
+    day = parseInt((document.getElementById('nb-day-' + txId) || {}).value);
+    if (!day || day < 1 || day > 31) { alert('Enter a valid due day (1-31).'); return; }
+  } else {
+    nextDate = (document.getElementById('nb-date-' + txId) || {}).value || t.date;
+  }
+
+  const newBill = {
+    id: Date.now(),
+    name, amount, frequency: freq, category: cat,
+    day: day || null,
+    nextDate: nextDate || null,
+    paidUntil: null
+  };
+  // Mark it paid for the current cycle since we just imported the payment
+  newBill.paidUntil = dateToStr(nextDueDateForBill(newBill));
+  state.bills.push(newBill);
+  logActivity('bill', `Added bill from inbox: ${name}`);
+
+  t.category = cat;
+  t.reviewed = true;
+  save();
+  renderBills(); renderAccounts(); renderDashboard(); renderTransactions();
+}
+
 function markTxReviewed(id) {
   const t = state.transactions.find(x => x.id === id);
   if (!t) return;
