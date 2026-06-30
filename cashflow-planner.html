@@ -1700,6 +1700,7 @@ function confirmImport() {
   clearImportPreview();
   renderTransactions();
   renderDashboard();
+  showBillMatchModal(newTx);
   alert(`✅ Imported ${newTx.length} transactions (${skipped} skipped).`);
 }
 
