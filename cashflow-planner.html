@@ -1959,6 +1959,8 @@ function renderTransactions() {
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-primary btn-sm" onclick="markTxReviewed(${t.id})">✓ Done</button>
+          ${!isIncome ? `<button class="btn btn-ghost btn-sm" onclick="document.getElementById('receipt-input-${t.id}').click()" title="Upload receipt to split this transaction by category">📎 Split</button>
+          <input type="file" id="receipt-input-${t.id}" accept="image/*" style="display:none" onchange="splitByReceipt(${t.id}, this)" />` : ''}
           <button class="btn btn-ghost btn-sm" onclick="openEditModal('${t.id}')">Edit</button>
           <button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">Delete</button>
         </td>
