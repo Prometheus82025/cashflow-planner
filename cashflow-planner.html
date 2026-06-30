@@ -1070,31 +1070,30 @@ function editAccount(id) {
     </td>`;
   row.after(editRow);
 }
-function saveCreditCard(id) {
+function onAvailCreditInput(id, availVal) {
+  // If user types available credit, back-calculate credit limit
   const a = state.accounts.find(x => x.id === id);
   if (!a) return;
-  a.creditLimit = parseFloat(document.getElementById(`cc-limit-${id}`).value) || 0;
-  a.dueDay = parseInt(document.getElementById(`cc-due-${id}`).value) || null;
-  a.minPayment = parseFloat(document.getElementById(`cc-min-${id}`).value) || null;
-  if (a.dueDay && a.minPayment) {
-    const existingBill = state.bills.find(b => b.name === `${a.name} - Min Payment`);
-    if (existingBill) {
-      existingBill.amount = a.minPayment;
-      existingBill.day = a.dueDay;
-    } else {
-      state.bills.push({
-        id: Date.now(),
-        name: `${a.name} - Min Payment`,
-        amount: a.minPayment,
-        frequency: 'monthly',
-        day: a.dueDay,
-        category: 'Credit Card',
-        nextDate: null,
-        paidUntil: null
-      });
-    }
+  const avail = parseFloat(availVal);
+  if (!isNaN(avail)) {
+    const impliedLimit = avail + (a.balance || 0);
+    const limitEl = document.getElementById('cc-limit-' + id);
+    if (limitEl) limitEl.value = impliedLimit.toFixed(2);
   }
-  save(); renderAccounts(); renderBills(); renderDashboard();
+}
+
+function saveAccount(id) {
+  const a = state.accounts.find(x => x.id === id);
+  if (!a) return;
+  const balEl = document.getElementById('cc-bal-' + id);
+  if (balEl) a.balance = parseFloat(balEl.value) || 0;
+  if (a.type === 'credit') {
+    const limitEl = document.getElementById('cc-limit-' + id);
+    if (limitEl && limitEl.value) a.creditLimit = parseFloat(limitEl.value) || 0;
+  }
+  const editRow = document.getElementById('cc-edit-' + id);
+  if (editRow) editRow.remove();
+  save(); renderAccounts(); renderDashboard();
 }
 function updateImportAccountSelect() {
   const sel = document.getElementById('import-account');
