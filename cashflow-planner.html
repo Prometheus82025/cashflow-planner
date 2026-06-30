@@ -1245,7 +1245,7 @@ function showBillMatchModal(transactions) {
   if (!matches.length) return;
   const list = document.getElementById('bill-match-list');
   list.innerHTML = matches.map(({ tx, bill }) => `
-    <div id="match-row-${bill.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+    <div id="match-row-${bill.id}" data-tx-id="${tx.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Imported transaction</div>
