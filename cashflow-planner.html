@@ -1751,6 +1751,49 @@ function updateTxCategory(id, cat) {
 
 function renderTransactions() {
   const tbody = document.getElementById('transactions-table-body');
+
+  // Update inbox badge count
+  const inboxCount = state.transactions.filter(t => t.reviewed === false).length;
+  const badge = document.getElementById('inbox-badge');
+  if (badge) { badge.style.display = inboxCount > 0 ? 'inline' : 'none'; badge.textContent = inboxCount; }
+
+  // ── INBOX MODE ──────────────────────────────────────────────────────────────
+  if (txViewMode === 'inbox') {
+    const inboxTx = state.transactions.filter(t => t.reviewed === false)
+      .sort((a, b) => (b.date||'').replace(/-/g,'') - (a.date||'').replace(/-/g,''));
+    const accMap = Object.fromEntries(state.accounts.map(a => [a.id, a.name]));
+    const thead = document.querySelector('#page-transactions table thead tr');
+    if (thead) thead.innerHTML = '<th>Date</th><th>Description</th><th>Account</th><th>Amount</th><th>Category</th><th>Actions</th>';
+    document.getElementById('bulk-tx-bar').style.display = 'none';
+    if (!inboxTx.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">✅</div>Inbox is empty — all caught up!</div></td></tr>';
+      return;
+    }
+    const catOptions = TX_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+    tbody.innerHTML = inboxTx.map(t => {
+      const selectedCat = t.category || 'Other';
+      return `<tr id="inbox-row-${t.id}">
+        <td style="white-space:nowrap;color:var(--muted);font-size:13px">${t.date}</td>
+        <td>${esc(t.description.substring(0,60))}</td>
+        <td style="color:var(--muted);font-size:12px">${esc(accMap[t.account]||'—')}</td>
+        <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600;white-space:nowrap">${fmt(t.amount)}</td>
+        <td><select style="padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text)" onchange="updateTxCategory(${t.id}, this.value)">
+          ${TX_CATEGORIES.map(c => `<option value="${c}"${c===selectedCat?' selected':''}>${c}</option>`).join('')}
+        </select></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-primary btn-sm" onclick="markTxReviewed(${t.id})">✓ Done</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal('${t.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">Delete</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return;
+  }
+
+  // ── HISTORY MODE ────────────────────────────────────────────────────────────
+  const thead = document.querySelector('#page-transactions table thead tr');
+  if (thead) thead.innerHTML = '<th style="width:32px"><input type="checkbox" id="select-all-tx" onchange="toggleSelectAllTx(this.checked)" title="Select all" /></th><th onclick="sortTx(\'date\')" style="cursor:pointer;user-select:none">Date <span id="sort-ind-date">↓</span></th><th onclick="sortTx(\'description\')" style="cursor:pointer;user-select:none">Description <span id="sort-ind-description"></span></th><th>Account</th><th onclick="sortTx(\'amount\')" style="cursor:pointer;user-select:none">Amount <span id="sort-ind-amount"></span></th><th onclick="sortTx(\'category\')" style="cursor:pointer;user-select:none">Category <span id="sort-ind-category"></span></th><th>Actions</th>';
+
   const catFilter = document.getElementById('cat-filter');
   // Populate month filter
   const monthEl = document.getElementById('month-filter');
