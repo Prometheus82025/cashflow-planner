@@ -1721,6 +1721,33 @@ let txCatFilter = '';
 let txMonthFilter = '';
 let txSortCol = 'date';
 let txSortDir = 'desc';
+let txViewMode = 'inbox'; // 'inbox' | 'history'
+
+function setTxView(mode) {
+  txViewMode = mode;
+  document.getElementById('view-inbox-btn').classList.toggle('active', mode === 'inbox');
+  document.getElementById('view-history-btn').classList.toggle('active', mode === 'history');
+  const histFilters = document.getElementById('tx-history-filters');
+  histFilters.style.display = mode === 'history' ? 'flex' : 'none';
+  renderTransactions();
+}
+
+const TX_CATEGORIES = ['Housing','Food','Groceries','Transportation','Utilities','Subscriptions','Insurance','Health','Personal Care','Entertainment','Shopping','Loans','Pets','Baby','Transfer','Income','Other'];
+
+function markTxReviewed(id) {
+  const t = state.transactions.find(x => x.id === id);
+  if (!t) return;
+  t.reviewed = true;
+  save();
+  renderTransactions();
+}
+
+function updateTxCategory(id, cat) {
+  const t = state.transactions.find(x => x.id === id);
+  if (!t) return;
+  t.category = cat;
+  // Don't save yet — user will hit Done to save + mark reviewed
+}
 
 function renderTransactions() {
   const tbody = document.getElementById('transactions-table-body');
