@@ -1781,6 +1781,92 @@ function dismissDupe(aId, bId) {
   save(); renderTransactions();
 }
 
+// ─── RECEIPT SPLIT ────────────────────────────────────────────────────────────
+async function splitByReceipt(txId, inputEl) {
+  const t = state.transactions.find(x => x.id === txId);
+  if (!t) return;
+  if (!openAIKey) { alert('Add your OpenAI API key in Settings to use receipt splitting.'); return; }
+  const file = inputEl.files[0];
+  if (!file) return;
+
+  // Show loading state on the row
+  const row = document.getElementById('inbox-row-' + txId);
+  if (row) {
+    const actionsCell = row.querySelector('td:last-child');
+    if (actionsCell) actionsCell.innerHTML = '<span style="color:var(--muted);font-size:13px">📎 Reading receipt…</span>';
+  }
+
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = e => res(e.target.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+
+    const categories = TX_CATEGORIES.join(', ');
+    const prompt = `This is a receipt image. The total transaction amount was ${fmt(Math.abs(t.amount))}.
+
+Extract each line item from the receipt and assign it one of these categories: ${categories}.
+
+Respond ONLY with a JSON array like:
+[{"description":"Milk 2%","amount":4.29,"category":"Groceries"},{"description":"T-shirt","amount":18.99,"category":"Shopping"}]
+
+Rules:
+- Amounts must be positive numbers
+- The sum of all amounts should be close to ${Math.abs(t.amount)}
+- Use only the categories listed above
+- Keep descriptions short (under 40 chars)`;
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: `data:${file.type};base64,${base64}`, detail: 'high' } }
+        ]}]
+      })
+    });
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('Could not parse receipt items from AI response.');
+    const items = JSON.parse(jsonMatch[0]);
+    if (!items.length) throw new Error('No items found in receipt.');
+
+    // Mark original as split parent (excluded from totals, kept for dupe detection)
+    t.isSplitParent = true;
+    t.reviewed = true;
+    t.category = 'Split';
+
+    // Add split lines as new reviewed transactions
+    const now = Date.now();
+    items.forEach((item, i) => {
+      state.transactions.push({
+        id: now + i + 1,
+        date: t.date,
+        description: item.description || 'Receipt item',
+        amount: -(Math.abs(parseFloat(item.amount)) || 0),
+        category: item.category || 'Other',
+        account: t.account,
+        reviewed: true,
+        splitFrom: t.description
+      });
+    });
+
+    state.transactions.sort((a, b) => parseLocalDateStr(b.date) - parseLocalDateStr(a.date));
+    logActivity('tx', `Split ${t.description} into ${items.length} items by receipt`);
+    save(); renderTransactions(); renderDashboard();
+
+  } catch(err) {
+    alert('Receipt split failed: ' + err.message);
+    renderTransactions(); // restore row
+  }
+}
+
 function onChangeTxType(id, type) {
   document.getElementById('tx-cat-wrap-' + id).style.display  = type === 'expense' ? '' : 'none';
   document.getElementById('tx-bill-wrap-' + id).style.display = type === 'bill'    ? '' : 'none';
