@@ -2281,7 +2281,7 @@ function renderDashboard() {
   // Categories breakdown
   const catList = document.getElementById('dash-categories-list');
   const spendByCat = {};
-  monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer' && t.category !== 'Income').forEach(t => {
+  monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer' && t.category !== 'Income' && !t.isSplitParent).forEach(t => {
     spendByCat[t.category] = (spendByCat[t.category]||0) + Math.abs(t.amount);
   });
   const catEntries = Object.entries(spendByCat).sort((a,b) => b[1]-a[1]);
