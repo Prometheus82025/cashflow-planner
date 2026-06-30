@@ -1835,9 +1835,29 @@ function renderTransactions() {
           </div>
           <div id="tx-bill-wrap-${t.id}" style="display:none">
             <select id="tx-bill-${t.id}" style="${selectStyle}">
-              <option value="">— Pick bill —</option>
+              <option value="">— Pick existing bill —</option>
               ${billOptions}
             </select>
+            <div style="margin-top:6px">
+              <button type="button" class="btn btn-ghost btn-sm" style="font-size:12px;width:100%" onclick="toggleAddBillForm(${t.id})">＋ Not listed? Add as new bill</button>
+            </div>
+            <div id="tx-new-bill-form-${t.id}" style="display:none;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;display:none;flex-direction:column;gap:8px">
+              <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:2px">New Recurring Bill</div>
+              <input id="nb-name-${t.id}" placeholder="Bill name" style="padding:6px 10px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%" value="${esc(t.description.substring(0,40))}" />
+              <input id="nb-amount-${t.id}" type="number" placeholder="Amount" style="padding:6px 10px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%" value="${Math.abs(t.amount)}" />
+              <select id="nb-freq-${t.id}" style="${selectStyle};margin-top:0" onchange="onNbFreqChange(${t.id}, this.value)">
+                <option value="monthly">Monthly</option>
+                <option value="biweekly">Biweekly</option>
+                <option value="weekly">Weekly</option>
+                <option value="once">One Time</option>
+              </select>
+              <input id="nb-day-${t.id}" type="number" min="1" max="31" placeholder="Due day of month (e.g. 15)" style="padding:6px 10px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%" />
+              <input id="nb-date-${t.id}" type="date" style="display:none;padding:6px 10px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%" value="${t.date}" />
+              <select id="nb-cat-${t.id}" style="${selectStyle};margin-top:0">
+                ${TX_CATEGORIES.map(c => `<option value="${c}"${c==='Other'?' selected':''}>${c}</option>`).join('')}
+              </select>
+              <button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px" onclick="addBillFromInbox(${t.id})">✓ Add Bill &amp; Mark Paid</button>
+            </div>
           </div>
           <div id="tx-card-wrap-${t.id}" style="display:none">
             <select id="tx-card-${t.id}" style="${selectStyle}">
