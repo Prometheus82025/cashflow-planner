@@ -2177,7 +2177,7 @@ function renderDashboard() {
   renderActivity();
 
   // Balance
-  const totalBalance = state.accounts.reduce((s, a) => a.type === 'credit' ? s - a.balance : s + a.balance, 0);
+  const totalBalance = state.accounts.reduce((s, a) => a.type !== 'credit' ? s + a.balance : s, 0);
   document.getElementById('dash-balance').textContent = fmt(totalBalance);
   document.getElementById('dash-accounts-count').textContent = `across ${state.accounts.length} account${state.accounts.length===1?'':'s'}`;
 
