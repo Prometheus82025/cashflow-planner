@@ -1890,6 +1890,9 @@ function renderTransactions() {
   const inboxCount = state.transactions.filter(t => t.reviewed === false).length;
   const badge = document.getElementById('inbox-badge');
   if (badge) { badge.style.display = inboxCount > 0 ? 'inline' : 'none'; badge.textContent = inboxCount; }
+  // Update dupes badge count
+  const dupesBadge = document.getElementById('dupes-badge');
+  if (dupesBadge) { const dc = findPossibleDupes().length; dupesBadge.style.display = dc ? 'inline' : 'none'; dupesBadge.textContent = dc; }
 
   // ── INBOX MODE ──────────────────────────────────────────────────────────────
   if (txViewMode === 'inbox') {
