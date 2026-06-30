@@ -1670,32 +1670,28 @@ function showImportPreview() {
   const tbody = document.getElementById('preview-table-body');
   const preview = pendingImport.slice(0, 50);
   let fuzzyCount = 0;
-  tbody.innerHTML = preview.map((t, i) => {
+  let skipCount = 0;
+  tbody.innerHTML = preview.map(t => {
     const dupeStatus = isFuzzyDupe(t);
-    const isExact = dupeStatus === 'exact';
-    const isFuzzy = dupeStatus && !isExact;
-    if (isFuzzy) fuzzyCount++;
-    const rowStyle = isExact || isFuzzy ? 'opacity:.5' : '';
-    const checked = !isExact && !isFuzzy; // fuzzy dupes unchecked by default
-    const note = isExact
-      ? `<span style="color:var(--muted);font-size:11px">exact dupe — skipped</span>`
-      : isFuzzy
-      ? `<span style="color:var(--yellow);font-size:11px">⚠️ ${esc(dupeStatus)}</span>`
-      : '';
-    return `<tr style="${rowStyle}">
-      <td style="text-align:center"><input type="checkbox" class="import-checkbox" data-idx="${i}" ${checked ? 'checked' : ''} ${isExact ? 'disabled' : ''} /></td>
+    const isDupe = !!dupeStatus;
+    if (isDupe) skipCount++;
+    const note = dupeStatus === 'exact'
+      ? `<span style="color:var(--muted);font-size:11px">already logged — skipping</span>`
+      : isDupe
+      ? `<span style="color:var(--yellow);font-size:11px">⚠️ possible dupe — skipping</span>`
+      : `<span style="color:var(--green);font-size:11px">✓ new</span>`;
+    return `<tr style="${isDupe ? 'opacity:.4' : ''}">
       <td>${t.date}</td>
       <td>${esc(t.description.substring(0,50))}</td>
       <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(t.amount)}</td>
-      <td>${catBadge(t.category)}</td>
       <td>${note}</td>
     </tr>`;
   }).join('');
   if (pendingImport.length > 50) {
-    tbody.innerHTML += `<tr><td colspan="6" style="color:var(--muted);text-align:center">… and ${pendingImport.length - 50} more</td></tr>`;
+    tbody.innerHTML += `<tr><td colspan="4" style="color:var(--muted);text-align:center">… and ${pendingImport.length - 50} more</td></tr>`;
   }
-  const total = preview.filter(t => isFuzzyDupe(t) !== 'exact').length;
-  document.getElementById('preview-count').textContent = `${pendingImport.length} found${fuzzyCount ? ` · ${fuzzyCount} possible duplicate${fuzzyCount>1?'s':''} flagged` : ''}`;
+  const newCount = pendingImport.length - skipCount;
+  document.getElementById('preview-count').textContent = `${pendingImport.length} found · ${newCount} new · ${skipCount} skipping`;
 }
 
 function confirmImport() {
