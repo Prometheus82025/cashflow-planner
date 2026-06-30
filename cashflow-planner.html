@@ -2313,24 +2313,16 @@ function renderDashboard() {
   const safeEl = document.getElementById('dash-safe-spend');
   safeEl.textContent = fmt(safeSpendRaw);
   safeEl.className = 'stat-value ' + (safeSpendRaw < 0 ? 'red' : safeSpendRaw < buffer ? 'yellow' : 'green');
+  document.getElementById('dash-safe-sub').textContent = `after ${fmt(bills7Total)} in bills this week`;
 
-  // Visual math breakdown
-  const dividerColor = 'var(--border)';
-  const breakdownEl = document.getElementById('dash-safe-breakdown');
-  const bufferWarning = safeSpendRaw < buffer && safeSpendRaw >= 0
-    ? `<div style="margin-top:6px;color:var(--yellow);font-size:11px">⚠️ Eating into your $${buffer} buffer</div>` : '';
-  const negWarning = safeSpendRaw < 0
-    ? `<div style="margin-top:6px;color:var(--red);font-size:11px">🚨 ${fmt(Math.abs(safeSpendRaw))} short after bills + buffer</div>` : '';
-  breakdownEl.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-family:monospace">
-      <span style="color:var(--text)">Balance</span><span style="color:#00aaff;text-align:right">${fmt(totalBalance)}</span>
-      <span style="color:var(--muted)">− Bills this week</span><span style="color:var(--red);text-align:right">${fmt(bills7Total)}</span>
-      <span style="color:var(--muted)">− Buffer</span><span style="color:var(--muted);text-align:right">${fmt(buffer)}</span>
-      <span style="border-top:1px solid var(--border);padding-top:4px;color:var(--text);font-weight:600">= Safe to Spend</span>
-      <span style="border-top:1px solid var(--border);padding-top:4px;color:${safeSpendRaw<0?'var(--red)':safeSpendRaw<buffer?'var(--yellow)':'var(--green)'};text-align:right;font-weight:600">${fmt(safeSpendRaw)}</span>
-    </div>
-    ${bufferWarning}${negWarning}
-  `;
+  const warnEl = document.getElementById('dash-safe-warning');
+  if (safeSpendRaw < 0) {
+    warnEl.innerHTML = `<span style="color:var(--red)">🚨 You're eating into your ${fmt(buffer)} buffer by ${fmt(Math.abs(safeSpendRaw))}.</span>`;
+  } else if (safeSpendRaw < buffer) {
+    warnEl.innerHTML = `<span style="color:var(--yellow)">⚠️ You're eating into your ${fmt(buffer)} buffer by ${fmt(buffer - safeSpendRaw)}.</span>`;
+  } else {
+    warnEl.innerHTML = '';
+  }
 
   // Spent this month
   const thisMonth = now.getMonth(), thisYear = now.getFullYear();
