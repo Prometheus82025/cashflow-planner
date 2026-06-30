@@ -2366,7 +2366,7 @@ function generateForecastEvents() {
 }
 
 function renderForecast() {
-  const startBalance = state.accounts.reduce((s, a) => a.type === 'credit' ? s - a.balance : s + a.balance, 0);
+  const startBalance = state.accounts.reduce((s, a) => a.type !== 'credit' ? s + a.balance : s, 0);
   const events = generateForecastEvents();
   document.getElementById('forecast-start-bal').textContent = fmt(startBalance);
 
