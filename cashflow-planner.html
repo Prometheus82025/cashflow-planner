@@ -1273,8 +1273,17 @@ function confirmBillMatch(billId) {
   if (!b) return;
   // Mark paid without deducting from account (transaction already captured the spend)
   b.paidUntil = dateToStr(nextDueDateForBill(b));
-  save(); renderBills(); renderDashboard();
-  document.getElementById('match-row-' + billId).innerHTML =
+  // Also mark the matched transaction as reviewed
+  const matchRow = document.getElementById('match-row-' + billId);
+  if (matchRow) {
+    const txId = matchRow.dataset.txId;
+    if (txId) {
+      const tx = state.transactions.find(x => String(x.id) === txId);
+      if (tx) tx.reviewed = true;
+    }
+  }
+  save(); renderBills(); renderDashboard(); renderTransactions();
+  if (matchRow) matchRow.innerHTML =
     `<div style="color:var(--green);font-weight:600;padding:4px 0">✅ ${b.name} marked as paid</div>`;
 }
 
