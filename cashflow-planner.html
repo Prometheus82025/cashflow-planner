@@ -2311,7 +2311,8 @@ function renderDashboard() {
   const buffer = state.settings.buffer || 200;
   const safeSpendRaw = totalBalance - bills7Total - buffer;
   const safeEl = document.getElementById('dash-safe-spend');
-  safeEl.textContent = fmt(safeSpendRaw);
+  const safeSpendDisplay = Math.max(0, safeSpendRaw);
+  safeEl.textContent = fmt(safeSpendDisplay);
   safeEl.className = 'stat-value ' + (safeSpendRaw < 0 ? 'red' : safeSpendRaw < buffer ? 'yellow' : 'green');
   document.getElementById('dash-safe-sub').textContent = `after ${fmt(bills7Total)} in bills this week`;
 
