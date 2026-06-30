@@ -2145,16 +2145,44 @@ function renderTransactions() {
   }
 
   const accMap = Object.fromEntries(state.accounts.map(a => [a.id, a.name]));
-  tbody.innerHTML = tx.slice(0, 200).map(t => `
-    <tr>
+
+  // Group by week (week starts Sunday)
+  function getWeekKey(dateStr) {
+    const d = parseLocalDateStr(dateStr);
+    const sunday = new Date(d);
+    sunday.setDate(d.getDate() - d.getDay());
+    return sunday.toISOString().substring(0, 10);
+  }
+  function weekLabel(weekKey) {
+    const d = parseLocalDateStr(weekKey);
+    // End of week = Saturday
+    const sat = new Date(d); sat.setDate(d.getDate() + 6);
+    const opts = { month: 'long', day: 'numeric' };
+    return `Week of ${d.toLocaleDateString('en-US', opts)}`;
+  }
+
+  const limited = tx.slice(0, 200);
+  let lastWeek = null;
+  const rows = [];
+  for (const t of limited) {
+    const wk = getWeekKey(t.date || todayStr());
+    if (wk !== lastWeek) {
+      lastWeek = wk;
+      rows.push(`<tr><td colspan="7" style="background:var(--surface2);padding:8px 14px;border-bottom:1px solid var(--border)">
+        <span style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em">${weekLabel(wk)}</span>
+      </td></tr>`);
+    }
+    rows.push(`<tr>
       <td><input type="checkbox" class="tx-checkbox" data-id="${t.id}" onchange="onTxCheckChange()" /></td>
       <td style="white-space:nowrap">${t.date}</td>
-      <td>${esc(t.description.substring(0,60))}${t.splitFrom ? ` <span style="font-size:10px;background:var(--accent2);color:#0f1117;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px" title="Split from: ${esc(t.splitFrom)}">split</span>` : ''}</td>
+      <td>${esc(t.description.substring(0,60))}${t.splitFrom ? ` <span style="font-size:10px;background:var(--accent2);color:#0f1117;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px" title="Split from: ${esc(t.splitFrom)}">split</span>` : ''}${t.isSplitParent ? ` <span style="font-size:10px;background:rgba(100,100,100,.3);color:var(--muted);padding:1px 5px;border-radius:4px;margin-left:4px">split parent</span>` : ''}</td>
       <td style="color:var(--muted);font-size:12px">${esc(accMap[t.account]||'—')}</td>
       <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600;white-space:nowrap">${fmt(t.amount)}</td>
       <td>${catBadge(t.category)}</td>
-      <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="openEditModal('${t.id}')">Edit</button> <button class="btn btn-ghost btn-sm" onclick="openSplitModal('${t.id}')" title="Split this transaction by receipt">Split</button> <button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">Delete</button></td>
-    </tr>`).join('');
+      <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="openEditModal('${t.id}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteTx('${t.id}')">Delete</button></td>
+    </tr>`);
+  }
+  tbody.innerHTML = rows.join('');
 }
 
 function getCheckedTxIds() {
