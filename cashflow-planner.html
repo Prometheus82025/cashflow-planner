@@ -1636,7 +1636,7 @@ function parseTransactions(rows) {
     const desc = (row[cols.descCol]||'').trim();
     const amount = parseAmount(row, cols);
     const date = parseDate(row[cols.dateCol]);
-    const cat = amount > 0 ? 'Income' : autoCategory(desc);
+    const cat = amount > 0 ? 'Income' : 'Other';
     return {
       id: Date.now() + Math.random(),
       date: dateToStr(date),
