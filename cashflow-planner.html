@@ -1771,23 +1771,49 @@ function renderTransactions() {
       .sort((a, b) => (b.date||'').replace(/-/g,'') - (a.date||'').replace(/-/g,''));
     const accMap = Object.fromEntries(state.accounts.map(a => [a.id, a.name]));
     const thead = document.querySelector('#page-transactions table thead tr');
-    if (thead) thead.innerHTML = '<th>Date</th><th>Description</th><th>Account</th><th>Amount</th><th>Category</th><th>Actions</th>';
+    if (thead) thead.innerHTML = '<th>Date</th><th>Description</th><th>Account</th><th>Amount</th><th>Categorize</th><th>Actions</th>';
     document.getElementById('bulk-tx-bar').style.display = 'none';
     if (!inboxTx.length) {
       tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">✅</div>Inbox is empty — all caught up!</div></td></tr>';
       return;
     }
-    const catOptions = TX_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+    const unpaidBills = state.bills.filter(b => !isBillPaid(b));
+    const billOptions = unpaidBills.map(b => `<option value="${b.id}">${esc(b.name)} — ${fmt(b.amount)}</option>`).join('');
+    const cardAccounts = state.accounts;
+    const cardOptions = cardAccounts.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    const selectStyle = 'padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);width:100%;margin-top:4px';
     tbody.innerHTML = inboxTx.map(t => {
       const selectedCat = t.category || 'Other';
+      const isIncome = t.amount > 0;
       return `<tr id="inbox-row-${t.id}">
         <td style="white-space:nowrap;color:var(--muted);font-size:13px">${t.date}</td>
         <td>${esc(t.description.substring(0,60))}</td>
         <td style="color:var(--muted);font-size:12px">${esc(accMap[t.account]||'—')}</td>
         <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600;white-space:nowrap">${fmt(t.amount)}</td>
-        <td><select style="padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text)" onchange="updateTxCategory(${t.id}, this.value)">
-          ${TX_CATEGORIES.map(c => `<option value="${c}"${c===selectedCat?' selected':''}>${c}</option>`).join('')}
-        </select></td>
+        <td style="min-width:200px">
+          <select id="tx-type-${t.id}" style="${selectStyle}" onchange="onChangeTxType(${t.id}, this.value)">
+            <option value="expense">${isIncome ? 'Income' : 'Expense'}</option>
+            ${!isIncome ? `<option value="bill">Bill Payment</option>` : ''}
+            ${!isIncome ? `<option value="card">Credit Card Payment</option>` : ''}
+          </select>
+          <div id="tx-cat-wrap-${t.id}">
+            <select id="tx-cat-${t.id}" style="${selectStyle}">
+              ${TX_CATEGORIES.map(c => `<option value="${c}"${c===selectedCat?' selected':''}>${c}</option>`).join('')}
+            </select>
+          </div>
+          <div id="tx-bill-wrap-${t.id}" style="display:none">
+            <select id="tx-bill-${t.id}" style="${selectStyle}">
+              <option value="">— Pick bill —</option>
+              ${billOptions}
+            </select>
+          </div>
+          <div id="tx-card-wrap-${t.id}" style="display:none">
+            <select id="tx-card-${t.id}" style="${selectStyle}">
+              <option value="">— Pick credit card —</option>
+              ${cardOptions}
+            </select>
+          </div>
+        </td>
         <td style="white-space:nowrap">
           <button class="btn btn-primary btn-sm" onclick="markTxReviewed(${t.id})">✓ Done</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditModal('${t.id}')">Edit</button>
