@@ -1927,6 +1927,42 @@ function renderTransactions() {
     return;
   }
 
+  // ── DUPES MODE ──────────────────────────────────────────────────────────────
+  if (txViewMode === 'dupes') {
+    const thead = document.querySelector('#page-transactions table thead tr');
+    if (thead) thead.innerHTML = '<th>Transaction A</th><th>Transaction B</th><th>Actions</th>';
+    document.getElementById('bulk-tx-bar').style.display = 'none';
+    const pairs = findPossibleDupes();
+    const dupesBadge = document.getElementById('dupes-badge');
+    if (dupesBadge) { dupesBadge.style.display = pairs.length ? 'inline' : 'none'; dupesBadge.textContent = pairs.length; }
+    if (!pairs.length) {
+      tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><div class="empty-icon">✅</div>No possible duplicates found.</div></td></tr>';
+      return;
+    }
+    const accMap = Object.fromEntries(state.accounts.map(a => [a.id, a.name]));
+    function txCard(t) {
+      return `<div style="font-weight:600;font-size:14px">${esc(t.description.substring(0,50))}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">${t.date} &nbsp;·&nbsp; ${esc(accMap[t.account]||'—')} &nbsp;·&nbsp; <span style="color:${t.amount<0?'var(--red)':'var(--green)'}">${fmt(t.amount)}</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.category||'—'}</div>`;
+    }
+    tbody.innerHTML = pairs.map(({ a, b, reason }) => `
+      <tr id="dupe-row-${a.id}-${b.id}">
+        <td>
+          ${txCard(a)}
+          <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="deleteDupeTx('${a.id}','${a.id}','${b.id}')">Delete This One</button>
+        </td>
+        <td>
+          ${txCard(b)}
+          <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="deleteDupeTx('${b.id}','${a.id}','${b.id}')">Delete This One</button>
+        </td>
+        <td style="white-space:nowrap;vertical-align:top">
+          <div style="font-size:11px;color:var(--yellow);margin-bottom:8px">${reason}</div>
+          <button class="btn btn-ghost btn-sm" onclick="dismissDupe('${a.id}','${b.id}')">Not a Dupe</button>
+        </td>
+      </tr>`).join('');
+    return;
+  }
+
   // ── HISTORY MODE ────────────────────────────────────────────────────────────
   const thead = document.querySelector('#page-transactions table thead tr');
   if (thead) thead.innerHTML = '<th style="width:32px"><input type="checkbox" id="select-all-tx" onchange="toggleSelectAllTx(this.checked)" title="Select all" /></th><th onclick="sortTx(\'date\')" style="cursor:pointer;user-select:none">Date <span id="sort-ind-date">↓</span></th><th onclick="sortTx(\'description\')" style="cursor:pointer;user-select:none">Description <span id="sort-ind-description"></span></th><th>Account</th><th onclick="sortTx(\'amount\')" style="cursor:pointer;user-select:none">Amount <span id="sort-ind-amount"></span></th><th onclick="sortTx(\'category\')" style="cursor:pointer;user-select:none">Category <span id="sort-ind-category"></span></th><th>Actions</th>';
