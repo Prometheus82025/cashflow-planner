@@ -1742,19 +1742,51 @@ function setTxView(mode) {
 
 const TX_CATEGORIES = ['Housing','Food','Groceries','Transportation','Utilities','Subscriptions','Insurance','Health','Personal Care','Entertainment','Shopping','Loans','Pets','Baby','Transfer','Income','Other'];
 
+function onChangeTxType(id, type) {
+  document.getElementById('tx-cat-wrap-' + id).style.display  = type === 'expense' ? '' : 'none';
+  document.getElementById('tx-bill-wrap-' + id).style.display = type === 'bill'    ? '' : 'none';
+  document.getElementById('tx-card-wrap-' + id).style.display = type === 'card'    ? '' : 'none';
+}
+
 function markTxReviewed(id) {
   const t = state.transactions.find(x => x.id === id);
   if (!t) return;
+
+  const typeEl = document.getElementById('tx-type-' + id);
+  const type = typeEl ? typeEl.value : 'expense';
+
+  if (type === 'bill') {
+    const billEl = document.getElementById('tx-bill-' + id);
+    const billId = billEl ? billEl.value : '';
+    if (!billId) { alert('Pick a bill to mark paid.'); return; }
+    const bill = state.bills.find(b => String(b.id) === billId);
+    if (bill) {
+      bill.paidUntil = dateToStr(nextDueDateForBill(bill));
+      t.category = bill.category || 'Bills';
+    }
+  } else if (type === 'card') {
+    const cardEl = document.getElementById('tx-card-' + id);
+    const acctId = cardEl ? cardEl.value : '';
+    if (!acctId) { alert('Pick a credit card account.'); return; }
+    const acct = state.accounts.find(a => String(a.id) === acctId);
+    if (acct) {
+      // Payment reduces credit card balance (less debt)
+      acct.balance = Math.round(((acct.balance || 0) + Math.abs(t.amount)) * 100) / 100;
+    }
+    t.category = 'Transfer';
+  } else {
+    const catEl = document.getElementById('tx-cat-' + id);
+    t.category = catEl ? catEl.value : (t.category || 'Other');
+  }
+
   t.reviewed = true;
   save();
-  renderTransactions();
+  renderBills(); renderAccounts(); renderDashboard(); renderTransactions();
 }
 
 function updateTxCategory(id, cat) {
   const t = state.transactions.find(x => x.id === id);
-  if (!t) return;
-  t.category = cat;
-  // Don't save yet — user will hit Done to save + mark reviewed
+  if (t) t.category = cat;
 }
 
 function renderTransactions() {
