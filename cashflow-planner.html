@@ -1200,6 +1200,88 @@ function markBillUnpaid(id) {
   save(); renderBills(); renderDashboard();
 }
 
+// ─── BILL MATCHING AFTER IMPORT ───────────────────────────────────────────────
+function findBillMatches(transactions) {
+  const matches = [];
+  const usedBillIds = new Set();
+  const usedTxIds = new Set();
+  for (const tx of transactions) {
+    if (tx.amount >= 0) continue; // only outflows
+    const txAmt = Math.abs(tx.amount);
+    const txDesc = tx.description.toLowerCase();
+    let bestMatch = null;
+    let bestScore = 0;
+    for (const b of state.bills) {
+      if (isBillPaid(b)) continue;
+      if (usedBillIds.has(b.id)) continue;
+      // Amount must be within $1 or 1% (whichever is larger)
+      const tolerance = Math.max(1, b.amount * 0.01);
+      if (Math.abs(txAmt - b.amount) > tolerance) continue;
+      // Name match: score based on how many bill name words appear in tx description
+      const billWords = b.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const matchCount = billWords.filter(w => txDesc.includes(w)).length;
+      const score = billWords.length > 0 ? matchCount / billWords.length : 0;
+      if (score > bestScore) { bestScore = score; bestMatch = b; }
+    }
+    // Only suggest if at least one name word matched, OR amount matches exactly and bill name is short
+    if (bestMatch && (bestScore > 0 || bestMatch.name.split(/\s+/).filter(w => w.length > 2).length === 0)) {
+      if (!usedTxIds.has(tx.id)) {
+        matches.push({ tx, bill: bestMatch, score: bestScore });
+        usedBillIds.add(bestMatch.id);
+        usedTxIds.add(tx.id);
+      }
+    }
+  }
+  return matches;
+}
+
+function showBillMatchModal(transactions) {
+  const matches = findBillMatches(transactions);
+  if (!matches.length) return;
+  const list = document.getElementById('bill-match-list');
+  list.innerHTML = matches.map(({ tx, bill }) => `
+    <div id="match-row-${bill.id}" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Imported transaction</div>
+          <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tx.description}</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px">${tx.date} &nbsp;·&nbsp; <span style="color:var(--red)">-${fmt(Math.abs(tx.amount))}</span></div>
+        </div>
+        <div style="color:var(--accent);font-size:20px;flex-shrink:0">→</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Bill</div>
+          <div style="font-weight:600;font-size:14px">${bill.name}</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px">${fmt(bill.amount)}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn btn-primary btn-sm" onclick="confirmBillMatch('${bill.id}')">✓ Mark Paid</button>
+          <button class="btn btn-ghost btn-sm" onclick="skipBillMatch('${bill.id}')">Skip</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('bill-match-modal').classList.add('open');
+}
+
+function confirmBillMatch(billId) {
+  const b = state.bills.find(x => x.id === billId);
+  if (!b) return;
+  // Mark paid without deducting from account (transaction already captured the spend)
+  b.paidUntil = dateToStr(nextDueDateForBill(b));
+  save(); renderBills(); renderDashboard();
+  document.getElementById('match-row-' + billId).innerHTML =
+    `<div style="color:var(--green);font-weight:600;padding:4px 0">✅ ${b.name} marked as paid</div>`;
+}
+
+function skipBillMatch(billId) {
+  const row = document.getElementById('match-row-' + billId);
+  if (row) row.style.opacity = '0.3';
+}
+
+function closeBillMatchModal() {
+  document.getElementById('bill-match-modal').classList.remove('open');
+}
+
 
 function daysUntil(date) {
   return Math.ceil((date - new Date()) / 86400000);
