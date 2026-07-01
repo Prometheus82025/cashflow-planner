@@ -2263,7 +2263,7 @@ function renderTransactions() {
   for (const wk of weekOrder) {
     const wkTx = weekGroups[wk];
     const isCollapsed = txWeekCollapsed[wk] || false;
-    const spent = wkTx.filter(t => t.amount < 0 && !t.isSplitParent).reduce((s, t) => s + t.amount, 0);
+    const spent = wkTx.filter(t => t.amount < 0 && !t.isSplitParent && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0);
     rows.push(`<tr onclick="toggleWeekCollapse('${wk}')" style="cursor:pointer;user-select:none;background:var(--surface2);border-bottom:1px solid var(--border)">
       <td colspan="7" style="padding:8px 14px">
         <span style="font-size:11px;margin-right:6px;color:var(--muted)">${isCollapsed ? '▶' : '▼'}</span>
