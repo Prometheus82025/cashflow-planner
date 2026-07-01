@@ -509,7 +509,20 @@
       <button class="btn btn-primary btn-sm" onclick="applyBulkCategory()">Apply</button>
       <button class="btn btn-ghost btn-sm" onclick="clearBulkSelection()">Clear</button>
     </div>
-    <div style="overflow-x:auto">
+    <!-- MONTHLY SUMMARY (shown instead of table when in monthly mode) -->
+    <div id="monthly-summary-view" style="display:none;padding:8px 0">
+      <table id="monthly-summary-table" style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid var(--border)">
+          <th style="padding:10px 14px;text-align:left">Month</th>
+          <th style="padding:10px 14px;text-align:right;color:var(--green)">Income</th>
+          <th style="padding:10px 14px;text-align:right;color:var(--red)">Expenses</th>
+          <th style="padding:10px 14px;text-align:right">Net Saved</th>
+          <th style="padding:10px 14px;text-align:right;color:var(--muted)"># Tx</th>
+        </tr></thead>
+        <tbody id="monthly-summary-body"></tbody>
+      </table>
+    </div>
+    <div id="tx-table-wrap" style="overflow-x:auto">
       <table>
         <thead><tr>
           <th style="width:32px"><input type="checkbox" id="select-all-tx" onchange="toggleSelectAllTx(this.checked)" title="Select all" /></th>
