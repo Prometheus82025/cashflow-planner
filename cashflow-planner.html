@@ -1734,10 +1734,12 @@ function setTxView(mode) {
   document.getElementById('view-inbox-btn').classList.toggle('active', mode === 'inbox');
   document.getElementById('view-dupes-btn').classList.toggle('active', mode === 'dupes');
   document.getElementById('view-history-btn').classList.toggle('active', mode === 'history');
+  document.getElementById('view-monthly-btn').classList.toggle('active', mode === 'monthly');
   const histFilters = document.getElementById('tx-history-filters');
   histFilters.style.display = mode === 'history' ? 'flex' : 'none';
   renderTransactions();
 }
+function toggleWeekCollapse(key) { txWeekCollapsed[key] = !txWeekCollapsed[key]; renderTransactions(); }
 
 const TX_CATEGORIES = ['Housing','Food','Groceries','Transportation','Utilities','Subscriptions','Insurance','Health','Personal Care','Entertainment','Shopping','Loans','Pets','Baby','Transfer','Income','Other'];
 
