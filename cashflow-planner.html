@@ -2103,6 +2103,65 @@ function renderTransactions() {
     return;
   }
 
+  // ── MONTHLY SUMMARY MODE ───────────────────────────────────────────────────
+  if (txViewMode === 'monthly') {
+    const thead = document.querySelector('#page-transactions table thead tr');
+    if (thead) thead.innerHTML = '<th colspan="2" style="font-weight:700">Month</th><th style="color:var(--green)">Income</th><th style="color:var(--red)">Expenses</th><th>Net Saved</th><th colspan="2"># Transactions</th>';
+    document.getElementById('bulk-tx-bar').style.display = 'none';
+
+    const monthData = {};
+    for (const t of state.transactions) {
+      if (!t.date || t.isSplitParent || t.category === 'Transfer') continue;
+      const mo = t.date.substring(0, 7);
+      if (!monthData[mo]) monthData[mo] = { income: 0, expenses: 0, count: 0 };
+      if (t.amount > 0) monthData[mo].income += t.amount;
+      else monthData[mo].expenses += Math.abs(t.amount);
+      monthData[mo].count++;
+    }
+
+    const sortedMonths = Object.keys(monthData).sort().reverse();
+    if (!sortedMonths.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">📅</div>No transaction data yet.</div></td></tr>';
+      return;
+    }
+
+    const mRows = sortedMonths.map(mo => {
+      const d = parseLocalDateStr(mo + '-01');
+      const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const { income, expenses, count } = monthData[mo];
+      const net = income - expenses;
+      return `<tr style="cursor:pointer" onclick="setTxView('history');txMonthFilter='${mo}';document.getElementById('month-filter').value='${mo}';renderTransactions()">
+        <td colspan="2" style="font-weight:600">${label}</td>
+        <td style="color:var(--green)">${fmt(income)}</td>
+        <td style="color:var(--red)">${fmt(expenses)}</td>
+        <td style="color:${net>=0?'var(--green)':'var(--red)'};font-weight:700">${net>=0?'+':''}${fmt(Math.abs(net))}</td>
+        <td colspan="2" style="color:var(--muted)">${count}</td>
+      </tr>`;
+    });
+
+    const yearGroups = {};
+    for (const mo of sortedMonths) {
+      const yr = mo.substring(0,4);
+      if (!yearGroups[yr]) yearGroups[yr] = { income: 0, expenses: 0 };
+      yearGroups[yr].income += monthData[mo].income;
+      yearGroups[yr].expenses += monthData[mo].expenses;
+    }
+    const yRows = Object.keys(yearGroups).sort().reverse().map(yr => {
+      const { income, expenses } = yearGroups[yr];
+      const net = income - expenses;
+      return `<tr style="background:var(--surface2);font-weight:700">
+        <td colspan="2" style="color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.05em">${yr} Total</td>
+        <td style="color:var(--green)">${fmt(income)}</td>
+        <td style="color:var(--red)">${fmt(expenses)}</td>
+        <td style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(Math.abs(net))}</td>
+        <td colspan="2" style="color:var(--muted)">—</td>
+      </tr>`;
+    });
+
+    tbody.innerHTML = mRows.join('') + yRows.join('');
+    return;
+  }
+
   // ── HISTORY MODE ────────────────────────────────────────────────────────────
   const thead = document.querySelector('#page-transactions table thead tr');
   if (thead) thead.innerHTML = '<th style="width:32px"><input type="checkbox" id="select-all-tx" onchange="toggleSelectAllTx(this.checked)" title="Select all" /></th><th onclick="sortTx(\'date\')" style="cursor:pointer;user-select:none">Date <span id="sort-ind-date">↓</span></th><th onclick="sortTx(\'description\')" style="cursor:pointer;user-select:none">Description <span id="sort-ind-description"></span></th><th>Account</th><th onclick="sortTx(\'amount\')" style="cursor:pointer;user-select:none">Amount <span id="sort-ind-amount"></span></th><th onclick="sortTx(\'category\')" style="cursor:pointer;user-select:none">Category <span id="sort-ind-category"></span></th><th>Actions</th>';
