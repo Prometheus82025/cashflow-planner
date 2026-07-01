@@ -2849,27 +2849,31 @@ function renderBudgets() {
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
 function fixWrongYearDates() {
-  const thisYear = new Date().getFullYear();
+  const input = prompt('Change transactions with wrong years to which year?\n(e.g. 2026)', String(new Date().getFullYear()));
+  if (!input) return;
+  const targetYear = parseInt(input, 10);
+  if (isNaN(targetYear) || targetYear < 2020 || targetYear > 2099) {
+    alert('Please enter a valid year like 2026.');
+    return;
+  }
   let fixed = 0;
   for (const t of state.transactions) {
     if (!t.date) continue;
     const d = parseLocalDateStr(t.date);
-    const yr = d.getFullYear();
-    if (yr < 2024) {
-      // Keep month+day, set year to current year
-      d.setFullYear(thisYear);
+    if (d.getFullYear() !== targetYear) {
+      d.setFullYear(targetYear);
       t.date = dateToStr(d);
       fixed++;
     }
   }
   if (fixed === 0) {
-    document.getElementById('fix-dates-result').textContent = 'No wrong-year dates found.';
+    document.getElementById('fix-dates-result').textContent = `No transactions found with a year other than ${targetYear}.`;
     return;
   }
   save();
   renderTransactions();
   renderDashboard();
-  document.getElementById('fix-dates-result').textContent = `Fixed ${fixed} transaction${fixed > 1 ? 's' : ''} — all updated to ${thisYear}.`;
+  document.getElementById('fix-dates-result').textContent = `Fixed ${fixed} transaction${fixed > 1 ? 's' : ''} — all updated to ${targetYear}.`;
 }
 
 function renderSettings() {
