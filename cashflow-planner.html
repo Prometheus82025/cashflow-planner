@@ -1726,7 +1726,8 @@ let txCatFilter = '';
 let txMonthFilter = '';
 let txSortCol = 'date';
 let txSortDir = 'desc';
-let txViewMode = 'inbox'; // 'inbox' | 'history'
+let txViewMode = 'inbox'; // 'inbox' | 'dupes' | 'history' | 'monthly'
+let txWeekCollapsed = {};
 
 function setTxView(mode) {
   txViewMode = mode;
