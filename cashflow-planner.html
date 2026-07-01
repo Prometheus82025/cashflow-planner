@@ -2641,9 +2641,9 @@ function renderForecast() {
   // Show avg daily spend note
   const noteEl = document.getElementById('forecast-spend-note');
   if (noteEl) {
-    noteEl.textContent = avgDailySpend > 0
-      ? `Includes ~${fmt(avgDailySpend)}/day estimated discretionary spending based on your transaction history.`
-      : 'No transaction history yet — forecast shows bills and income only.';
+    noteEl.textContent = hasEnoughHistory
+      ? `Estimated daily spending: ${fmt(avgDailySpend)}/day (from your last 30+ days of transactions). Bills and income are scheduled exactly.`
+      : 'Not enough history yet to estimate daily spending — showing scheduled bills and income only. This will improve after 30 days of transactions.';
   }
 
   // Stat cards
