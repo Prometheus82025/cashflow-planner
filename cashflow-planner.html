@@ -2726,14 +2726,22 @@ function renderForecast() {
     summary += `You have <strong style="color:var(--red)">${fmt(totalBills)}</strong> in bills going out and <strong style="color:var(--green)">${fmt(totalIncome)}</strong> in income coming in. `;
     if (topBills.length) summary += `Your biggest expenses are ${topBills.map(b => `<strong>${esc(b.label)}</strong> (${fmt(Math.abs(b.amount))})`).join(', ')}. `;
     if (minBal < startBalance) summary += `Your lowest point will be <strong style="color:${minBal < 0 ? 'var(--red)' : 'var(--yellow)'}">${fmt(minBal)}</strong> around <strong>${minBalDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</strong>.`;
+    // Add explanation if balance dips negative but recovers
+    if (minBal < 0 && endBal > 0) {
+      summary += ` <span style="color:var(--yellow)">⚠️ The dip is temporary — bills hit before your next paycheck arrives. Consider moving funds to cover it.</span>`;
+    }
     summaryEl.innerHTML = summary;
+  } else {
+    summaryEl.innerHTML = '<span style="color:var(--muted)">Add bills and income to see your forecast analysis.</span>';
+  }
 
-    // Key events list — top 5 bills + all income, sorted by date
+  // DEAD CODE REMOVED — forecast-key-events section was a duplicate of the table below
+  if (false) {
     const keyEvents = [
-      ...bills.sort((a,b) => a.amount - b.amount).slice(0,5),
-      ...incomes
+      ...events.filter(e=>e.type==='bill').sort((a,b) => a.amount - b.amount).slice(0,5),
     ].sort((a,b) => a.date - b.date);
-    keyEventsEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">` +
+    const keyEventsEl = document.getElementById('forecast-key-events');
+    if (keyEventsEl) keyEventsEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">` +
       keyEvents.map(e => `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
           <div>
