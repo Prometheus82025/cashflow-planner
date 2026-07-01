@@ -2591,8 +2591,7 @@ function renderForecast() {
   const events = generateForecastEvents();
   document.getElementById('forecast-start-bal').textContent = fmt(startBalance);
 
-  // Calculate average daily discretionary spending from transaction history
-  // (non-bill, non-income, non-transfer, non-split-parent transactions)
+  // Average daily discretionary spend — only use if we have 30+ days of real history
   const billCategories = new Set(state.bills.map(b => b.category).filter(Boolean));
   const reviewedTx = state.transactions.filter(t =>
     t.reviewed !== false &&
@@ -2603,11 +2602,15 @@ function renderForecast() {
     !billCategories.has(t.category)
   );
   let avgDailySpend = 0;
-  if (reviewedTx.length >= 3) {
+  let hasEnoughHistory = false;
+  if (reviewedTx.length >= 5) {
     const dates = reviewedTx.map(t => parseLocalDateStr(t.date)).sort((a,b) => a-b);
-    const spanDays = Math.max(1, (dates[dates.length-1] - dates[0]) / 86400000);
-    const totalSpent = reviewedTx.reduce((s,t) => s + Math.abs(t.amount), 0);
-    avgDailySpend = totalSpent / Math.max(spanDays, 30); // minimum 30-day base
+    const spanDays = (dates[dates.length-1] - dates[0]) / 86400000;
+    if (spanDays >= 30) {
+      const totalSpent = reviewedTx.reduce((s,t) => s + Math.abs(t.amount), 0);
+      avgDailySpend = totalSpent / spanDays;
+      hasEnoughHistory = true;
+    }
   }
 
   // Build daily balance series
