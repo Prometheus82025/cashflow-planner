@@ -2118,10 +2118,11 @@ function renderTransactions() {
 
   // ── MONTHLY SUMMARY MODE ───────────────────────────────────────────────────
   if (txViewMode === 'monthly') {
-    const thead = document.querySelector('#page-transactions table thead tr');
-    if (thead) thead.innerHTML = '<th colspan="2" style="font-weight:700">Month</th><th style="color:var(--green)">Income</th><th style="color:var(--red)">Expenses</th><th>Net Saved</th><th colspan="2"># Transactions</th>';
+    document.getElementById('monthly-summary-view').style.display = 'block';
+    document.getElementById('tx-table-wrap').style.display = 'none';
     document.getElementById('bulk-tx-bar').style.display = 'none';
 
+    const mBody = document.getElementById('monthly-summary-body');
     const monthData = {};
     for (const t of state.transactions) {
       if (!t.date || t.isSplitParent || t.category === 'Transfer') continue;
@@ -2134,7 +2135,7 @@ function renderTransactions() {
 
     const sortedMonths = Object.keys(monthData).sort().reverse();
     if (!sortedMonths.length) {
-      tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><div class="empty-icon">📅</div>No transaction data yet.</div></td></tr>';
+      mBody.innerHTML = '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--muted)">No transaction data yet.</td></tr>';
       return;
     }
 
@@ -2143,15 +2144,17 @@ function renderTransactions() {
       const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       const { income, expenses, count } = monthData[mo];
       const net = income - expenses;
-      return `<tr style="cursor:pointer" onclick="setTxView('history');txMonthFilter='${mo}';document.getElementById('month-filter').value='${mo}';renderTransactions()">
-        <td colspan="2" style="font-weight:600">${label}</td>
-        <td style="color:var(--green)">${fmt(income)}</td>
-        <td style="color:var(--red)">${fmt(expenses)}</td>
-        <td style="color:${net>=0?'var(--green)':'var(--red)'};font-weight:700">${net>=0?'+':''}${fmt(Math.abs(net))}</td>
-        <td colspan="2" style="color:var(--muted)">${count}</td>
+      const s = 'padding:10px 14px;border-bottom:1px solid var(--border)';
+      return `<tr style="cursor:pointer" onclick="setTxView('history');txMonthFilter='${mo}';document.getElementById('month-filter').value='${mo}';renderTransactions()" title="Click to see ${label} transactions">
+        <td style="${s};font-weight:600">${label}</td>
+        <td style="${s};text-align:right;color:var(--green)">${fmt(income)}</td>
+        <td style="${s};text-align:right;color:var(--red)">${fmt(expenses)}</td>
+        <td style="${s};text-align:right;color:${net>=0?'var(--green)':'var(--red)'};font-weight:700">${net>=0?'+':'−'}${fmt(Math.abs(net))}</td>
+        <td style="${s};text-align:right;color:var(--muted)">${count}</td>
       </tr>`;
     });
 
+    // Year totals
     const yearGroups = {};
     for (const mo of sortedMonths) {
       const yr = mo.substring(0,4);
@@ -2162,18 +2165,23 @@ function renderTransactions() {
     const yRows = Object.keys(yearGroups).sort().reverse().map(yr => {
       const { income, expenses } = yearGroups[yr];
       const net = income - expenses;
+      const s = 'padding:10px 14px;border-top:2px solid var(--border)';
       return `<tr style="background:var(--surface2);font-weight:700">
-        <td colspan="2" style="color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.05em">${yr} Total</td>
-        <td style="color:var(--green)">${fmt(income)}</td>
-        <td style="color:var(--red)">${fmt(expenses)}</td>
-        <td style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(Math.abs(net))}</td>
-        <td colspan="2" style="color:var(--muted)">—</td>
+        <td style="${s};color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.05em">${yr} Total</td>
+        <td style="${s};text-align:right;color:var(--green)">${fmt(income)}</td>
+        <td style="${s};text-align:right;color:var(--red)">${fmt(expenses)}</td>
+        <td style="${s};text-align:right;color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':'−'}${fmt(Math.abs(net))}</td>
+        <td style="${s};text-align:right;color:var(--muted)">—</td>
       </tr>`;
     });
 
-    tbody.innerHTML = mRows.join('') + yRows.join('');
+    mBody.innerHTML = mRows.join('') + yRows.join('');
     return;
   }
+
+  // Restore normal table when leaving monthly mode
+  document.getElementById('monthly-summary-view').style.display = 'none';
+  document.getElementById('tx-table-wrap').style.display = 'block';
 
   // ── HISTORY MODE ────────────────────────────────────────────────────────────
   const thead = document.querySelector('#page-transactions table thead tr');
