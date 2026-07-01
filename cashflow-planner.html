@@ -2590,6 +2590,25 @@ function renderForecast() {
   const events = generateForecastEvents();
   document.getElementById('forecast-start-bal').textContent = fmt(startBalance);
 
+  // Calculate average daily discretionary spending from transaction history
+  // (non-bill, non-income, non-transfer, non-split-parent transactions)
+  const billCategories = new Set(state.bills.map(b => b.category).filter(Boolean));
+  const reviewedTx = state.transactions.filter(t =>
+    t.reviewed !== false &&
+    t.amount < 0 &&
+    !t.isSplitParent &&
+    t.category !== 'Transfer' &&
+    t.category !== 'Income' &&
+    !billCategories.has(t.category)
+  );
+  let avgDailySpend = 0;
+  if (reviewedTx.length >= 3) {
+    const dates = reviewedTx.map(t => parseLocalDateStr(t.date)).sort((a,b) => a-b);
+    const spanDays = Math.max(1, (dates[dates.length-1] - dates[0]) / 86400000);
+    const totalSpent = reviewedTx.reduce((s,t) => s + Math.abs(t.amount), 0);
+    avgDailySpend = totalSpent / Math.max(spanDays, 30); // minimum 30-day base
+  }
+
   // Build daily balance series
   const now = new Date();
   const days = 60;
@@ -2609,8 +2628,18 @@ function renderForecast() {
     if (eventsByDay[key]) {
       running += eventsByDay[key].reduce((s,e) => s+e.amount, 0);
     }
+    // Subtract estimated daily discretionary spend (skip day 0)
+    if (i > 0) running -= avgDailySpend;
     labels.push(d.toLocaleDateString('en-US', {month:'short', day:'numeric'}));
     balances.push(Math.round(running*100)/100);
+  }
+
+  // Show avg daily spend note
+  const noteEl = document.getElementById('forecast-spend-note');
+  if (noteEl) {
+    noteEl.textContent = avgDailySpend > 0
+      ? `Includes ~${fmt(avgDailySpend)}/day estimated discretionary spending based on your transaction history.`
+      : 'No transaction history yet — forecast shows bills and income only.';
   }
 
   // Stat cards
