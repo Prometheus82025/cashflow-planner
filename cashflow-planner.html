@@ -2852,6 +2852,30 @@ function renderBudgets() {
 }
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
+function fixWrongYearDates() {
+  const thisYear = new Date().getFullYear();
+  let fixed = 0;
+  for (const t of state.transactions) {
+    if (!t.date) continue;
+    const d = parseLocalDateStr(t.date);
+    const yr = d.getFullYear();
+    if (yr < 2024) {
+      // Keep month+day, set year to current year
+      d.setFullYear(thisYear);
+      t.date = dateToStr(d);
+      fixed++;
+    }
+  }
+  if (fixed === 0) {
+    document.getElementById('fix-dates-result').textContent = 'No wrong-year dates found.';
+    return;
+  }
+  save();
+  renderTransactions();
+  renderDashboard();
+  document.getElementById('fix-dates-result').textContent = `Fixed ${fixed} transaction${fixed > 1 ? 's' : ''} — all updated to ${thisYear}.`;
+}
+
 function renderSettings() {
   document.getElementById('settings-buffer').value = state.settings.buffer || 200;
   const li = document.getElementById('settings-last-imported');
