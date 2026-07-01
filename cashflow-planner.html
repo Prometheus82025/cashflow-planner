@@ -2735,26 +2735,6 @@ function renderForecast() {
     summaryEl.innerHTML = '<span style="color:var(--muted)">Add bills and income to see your forecast analysis.</span>';
   }
 
-  // DEAD CODE REMOVED — forecast-key-events section was a duplicate of the table below
-  if (false) {
-    const keyEvents = [
-      ...events.filter(e=>e.type==='bill').sort((a,b) => a.amount - b.amount).slice(0,5),
-    ].sort((a,b) => a.date - b.date);
-    const keyEventsEl = document.getElementById('forecast-key-events');
-    if (keyEventsEl) keyEventsEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">` +
-      keyEvents.map(e => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
-          <div>
-            <div style="font-weight:600;font-size:14px">${esc(e.label)}</div>
-            <div style="font-size:12px;color:var(--muted)">${e.date.toLocaleDateString('en-US',{month:'short',day:'numeric',weekday:'short'})}</div>
-          </div>
-          <div style="font-size:16px;font-weight:700;color:${e.amount < 0 ? 'var(--red)' : 'var(--green)'}">${fmt(e.amount)}</div>
-        </div>`).join('') + `</div>`;
-  } else {
-    summaryEl.innerHTML = '<span style="color:var(--muted)">Add bills and income to see your forecast analysis.</span>';
-    keyEventsEl.innerHTML = '';
-  }
-
   // Forecast table
   const tbody = document.getElementById('forecast-table-body');
   if (!events.length) {
