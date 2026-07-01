@@ -689,6 +689,13 @@
   </div>
 
   <div class="card">
+    <div class="card-title">Fix Wrong-Year Dates</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">If imported transactions show up under the wrong year, this will correct them — keeping the same month and day but updating the year to match the transaction's actual timeframe.</p>
+    <button class="btn" onclick="fixWrongYearDates()">🗓️ Fix Import Dates</button>
+    <div id="fix-dates-result" style="margin-top:8px;font-size:13px;color:var(--green)"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title" style="color:var(--red)">Danger Zone</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Permanently delete all data. This cannot be undone.</p>
     <button class="btn btn-danger" onclick="if(confirm('Delete ALL data? This cannot be undone.')) { localStorage.removeItem(\'cashflow_v2\'); location.reload(); }">🗑️ Clear All Data</button>
