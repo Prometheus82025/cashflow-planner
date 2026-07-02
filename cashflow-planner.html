@@ -1582,7 +1582,7 @@ function openEditBillModal(id) {
   document.getElementById('edit-bill-amount').value = b.amount;
   const freq = b.frequency || 'monthly';
   document.getElementById('edit-bill-frequency').value = freq;
-  document.getElementById('edit-bill-category').value = b.category || 'Other';
+  populateBillCategoryDropdowns(undefined, b.category || 'Other');
   const isMonthly = freq === 'monthly';
   document.getElementById('edit-bill-day-wrap').style.display = isMonthly ? '' : 'none';
   document.getElementById('edit-bill-date-wrap').style.display = isMonthly ? 'none' : '';
