@@ -1368,7 +1368,7 @@ function renderBills() {
     if (el) el.textContent = billSortCol === col ? (billSortDir === 1 ? ' ▲' : ' ▼') : '';
   });
 
-  const sorted = [...state.bills].sort((a, b) => {
+  const allSorted = [...state.bills].sort((a, b) => {
     let av, bv;
     if (billSortCol === 'name')      { av = a.name.toLowerCase(); bv = b.name.toLowerCase(); }
     else if (billSortCol === 'category') { av = (a.category||'').toLowerCase(); bv = (b.category||'').toLowerCase(); }
@@ -1379,8 +1379,16 @@ function renderBills() {
     if (av > bv) return 1 * billSortDir;
     return 0;
   }).filter(b => !currentFilter || b.category === currentFilter);
-  if (!sorted.length) {
+
+  const paidCount = allSorted.filter(b => isBillPaid(b)).length;
+  const sorted = showPaidBills ? allSorted : allSorted.filter(b => !isBillPaid(b));
+
+  if (!sorted.length && !paidCount) {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>No bills in this category.</div></td></tr>`;
+    return;
+  }
+  if (!sorted.length && paidCount) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">✅</div>All caught up! ${paidCount} bill${paidCount > 1 ? 's' : ''} paid. <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="showPaidBills=true;renderBills()">Show paid</span></div></td></tr>`;
     return;
   }
   tbody.innerHTML = sorted.map(b => {
@@ -1389,7 +1397,7 @@ function renderBills() {
     const paid = isBillPaid(b);
     const urgency = paid ? 'badge-green' : days <= 3 ? 'badge-red' : days <= 7 ? 'badge-yellow' : 'badge-green';
     const dayLabel = paid ? 'Paid' : days <= 0 ? 'Today!' : `${days}d`;
-    return `<tr style="${paid ? 'opacity:.6' : ''}">
+    return `<tr>
       <td><strong>${esc(b.name)}</strong></td>
       <td>${catBadge(b.category)}</td>
       <td style="font-size:12px;color:var(--muted)">${freqLabel(b)}</td>
@@ -1403,7 +1411,7 @@ function renderBills() {
         <button class="btn btn-danger btn-sm" onclick="deleteBill(${b.id})">Remove</button>
       </td>
     </tr>`;
-  }).join('');
+  }).join('') + (paidCount && !showPaidBills ? `<tr><td colspan="6" style="text-align:center;padding:10px;color:var(--muted);font-size:13px">${paidCount} paid bill${paidCount > 1 ? 's' : ''} hidden — <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="showPaidBills=true;renderBills()">show</span></td></tr>` : paidCount && showPaidBills ? `<tr><td colspan="6" style="text-align:center;padding:10px;color:var(--muted);font-size:13px"><span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="showPaidBills=false;renderBills()">Hide paid bills</span></td></tr>` : '');
 }
 
 // ─── EDIT BILL ───────────────────────────────────────────────────────────────
