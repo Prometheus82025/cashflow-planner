@@ -1383,6 +1383,9 @@ function renderBills() {
     return s + b.amount * mult;
   }, 0);
   totalLabel.textContent = `~${fmt(monthlyEq)}/mo`;
+  const monthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const headingEl = document.getElementById('bills-month-heading');
+  if (headingEl) headingEl.textContent = monthName + ' Bills';
 
   // Update sort indicators
   ['name','category','frequency','amount','due'].forEach(col => {
