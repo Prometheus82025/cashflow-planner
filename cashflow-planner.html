@@ -1293,6 +1293,15 @@ function confirmBillPaidWithAcct(acctIdx) {
 function confirmBillPaidSkip() {
   const b = state.bills.find(x => x.id === markPaidBillId);
   if (!b) return;
+  // Still create a transaction so budgets track the spending (no account deduction)
+  state.transactions.push({
+    id: Date.now(),
+    date: todayStr(),
+    description: `${b.name} (bill payment)`,
+    amount: -Math.abs(b.amount),
+    category: b.category || 'Bills',
+    account: ''
+  });
   _finalizeBillPaid(b);
 }
 
@@ -1300,7 +1309,7 @@ function _finalizeBillPaid(b) {
   b.paidUntil = dateToStr(nextDueDateForBill(b));
   showPaidBills = false;
   closeMarkPaidModal();
-  save(); renderBills(); renderAccounts(); renderDashboard();
+  save(); renderBills(); renderAccounts(); renderDashboard(); renderBudgets(); renderTransactions();
 }
 function markBillUnpaid(id) {
   const b = state.bills.find(x => x.id === id);
