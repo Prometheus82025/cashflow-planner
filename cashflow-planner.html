@@ -1238,30 +1238,58 @@ function isBillPaid(b) {
   if (!b.paidUntil) return false;
   return parseLocalDateStr(b.paidUntil) >= nextDueDateForBill(b);
 }
+let markPaidBillId = null;
+
 function markBillPaid(id) {
   const b = state.bills.find(x => x.id === id);
   if (!b) return;
-  const opts = (state.accounts.length
-    ? state.accounts.map((a, i) => `${i}: ${a.name} (${fmt(a.balance)})`).join('\n') + '\n\nS: Already paid — just mark it off (no deduction)'
-    : 'No accounts set up.\n\nS: Already paid — just mark it off (no deduction)');
-  const input = prompt(`Deduct ${fmt(b.amount)} from which account?\n\n${opts}\n\nEnter the number, or S to skip deduction:`);
-  if (input === null) return;
-  if (input.trim().toLowerCase() !== 's') {
-    const idx = parseInt(input);
-    const acct = state.accounts[idx];
-    if (!acct) { alert('Invalid selection.'); return; }
-    acct.balance = (acct.balance || 0) - b.amount;
-    state.transactions.push({
-      id: Date.now(),
-      date: todayStr(),
-      description: `${b.name} (bill payment)`,
-      amount: -b.amount,
-      category: b.category || 'Bills',
-      account: acct.name
-    });
+  markPaidBillId = id;
+  document.getElementById('mark-paid-bill-name').textContent = `${b.name} — ${fmt(b.amount)}`;
+  const list = document.getElementById('mark-paid-account-list');
+  if (!state.accounts.length) {
+    list.innerHTML = `<p style="color:var(--muted);font-size:13px">No accounts set up. Use "Already paid" below to just mark it off.</p>`;
+  } else {
+    list.innerHTML = state.accounts.map((a, i) => `
+      <button class="btn btn-ghost" style="justify-content:space-between;text-align:left;padding:10px 14px"
+        onclick="confirmBillPaidWithAcct(${i})">
+        <span>${esc(a.name)}</span>
+        <span style="color:var(--muted);font-size:13px">${fmt(a.balance)}</span>
+      </button>`).join('');
   }
+  document.getElementById('mark-paid-modal').classList.add('open');
+}
+
+function closeMarkPaidModal() {
+  document.getElementById('mark-paid-modal').classList.remove('open');
+  markPaidBillId = null;
+}
+
+function confirmBillPaidWithAcct(acctIdx) {
+  const b = state.bills.find(x => x.id === markPaidBillId);
+  const acct = state.accounts[acctIdx];
+  if (!b || !acct) return;
+  acct.balance = (acct.balance || 0) - b.amount;
+  state.transactions.push({
+    id: Date.now(),
+    date: todayStr(),
+    description: `${b.name} (bill payment)`,
+    amount: -b.amount,
+    category: b.category || 'Bills',
+    account: acct.name
+  });
+  _finalizeBillPaid(b);
+}
+
+function confirmBillPaidSkip() {
+  const b = state.bills.find(x => x.id === markPaidBillId);
+  if (!b) return;
+  _finalizeBillPaid(b);
+}
+
+function _finalizeBillPaid(b) {
   b.paidUntil = dateToStr(nextDueDateForBill(b));
   showPaidBills = false;
+  closeMarkPaidModal();
   save(); renderBills(); renderAccounts(); renderDashboard();
 }
 function markBillUnpaid(id) {
