@@ -3174,6 +3174,13 @@ function renderBudgetChart() {
   });
 
   const ctx = document.getElementById('budget-donut-chart').getContext('2d');
+  // Center overlay
+  const centerEl = document.getElementById('budget-donut-remaining');
+  if (centerEl) {
+    centerEl.textContent = fmt(remaining);
+    centerEl.style.color = remaining <= 0 ? 'var(--red)' : remaining < totalBudget * 0.2 ? 'var(--yellow)' : 'var(--green)';
+  }
+
   if (budgetChart) budgetChart.destroy();
   budgetChart = new Chart(ctx, {
     type: 'doughnut',
