@@ -2151,8 +2151,10 @@ function markTxReviewed(id) {
   } else {
     const catEl = document.getElementById('tx-cat-' + id);
     t.category = catEl ? catEl.value : (t.category || 'Other');
-    if (t.amount < 0 && t.account) {
-      const acct = state.accounts.find(a => a.name === t.account || String(a.id) === String(t.account));
+    if (t.amount < 0) {
+      // Try lookup by ID (stored as string from select value), then by name
+      const acct = state.accounts.find(a => String(a.id) === String(t.account))
+                || state.accounts.find(a => a.name === t.account);
       if (acct && acct.type !== 'credit') {
         acct.balance = Math.round(((acct.balance || 0) + t.amount) * 100) / 100;
       }
