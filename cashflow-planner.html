@@ -2675,8 +2675,11 @@ function renderDashboard() {
   document.getElementById('dash-need-week').className = 'stat-value yellow';
   document.getElementById('dash-need-week-by').textContent = 'by ' + in7.toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
-  // Budget This Week = sum of all monthly budgets / 4.33
-  const monthlyBudgetTotal = Object.values(state.budgets || {}).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+  // Budget This Week = sum of included monthly budgets / 4.33 (excludes user-excluded categories)
+  const budgetWeekExclude = state.settings.budgetWeekExclude || [];
+  const monthlyBudgetTotal = Object.entries(state.budgets || {})
+    .filter(([cat]) => !budgetWeekExclude.includes(cat))
+    .reduce((s, [, v]) => s + (parseFloat(v) || 0), 0);
   const weeklyBudgetTotal = Math.round(monthlyBudgetTotal / 4.33);
   const budgetWeekEl = document.getElementById('dash-budget-week');
   if (budgetWeekEl) {
