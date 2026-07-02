@@ -1689,7 +1689,20 @@ async function processStatementWithAI(file) {
 
     const accountName = document.getElementById('import-account').options[document.getElementById('import-account').selectedIndex]?.text || '';
     const today = todayStr();
-    const prompt = `You are extracting transactions from a bank screenshot, mobile banking app, bank statement PDF, or store receipt. Return ONLY a raw JSON array — no markdown, no code blocks, no explanation. Each object must have: "date" (YYYY-MM-DD), "description" (full merchant/description as shown), "amount" (negative for purchases/debits/charges/money out, positive for deposits/credits/money in). Rules: (1) Extract EVERY transaction visible — including pending transactions. For pending transactions with no date shown, use today is date: ${today}. (2) Do not skip any row. Do not group or summarize. (3) If it is a store receipt, return one transaction: store name as description, total as a negative amount, receipt date as date. (4) Ignore running balance numbers — only extract the transaction amount (the charge or deposit amount, not the account balance). Return ONLY the raw JSON array. Example: [{"date":"${today}","description":"POS DEBIT WALNUT GLEN CAFE DALLAS TX","amount":-16.29},{"date":"2026-07-01","description":"WAL-MART #2973 MURPHY TX","amount":-174.99}]`;
+    const prompt = `Extract every transaction from this image. It may be a mobile banking app screenshot, bank statement, or store receipt. Return ONLY a raw JSON array — no markdown, no code fences, no explanation.
+
+Each object: {"date":"YYYY-MM-DD","description":"full text","amount":number}
+- amount is NEGATIVE for debits/purchases/charges (money leaving the account)
+- amount is POSITIVE for credits/deposits (money coming in)
+
+CRITICAL RULES:
+1. Include EVERY transaction row — both PENDING and POSTED. Do not skip any.
+2. Pending transactions often appear under a "Pending" header with no date — use "${today}" as their date.
+3. In mobile banking apps, some transactions show a running account balance (like $891.49 or $1,066.48) on the LEFT below the merchant name. That is the ACCOUNT BALANCE — ignore it. The TRANSACTION AMOUNT is the red or green number on the RIGHT side of the row (like -$174.99).
+4. For store receipts: one transaction, store name as description, total as negative amount.
+5. Do not group, summarize, or skip any visible row.
+
+Return ONLY the JSON array.`;
 
     const imageContent = isPdf
       ? { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } }
