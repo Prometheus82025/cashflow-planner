@@ -1223,6 +1223,7 @@ function markBillPaid(id) {
     account: acct.name
   });
   b.paidUntil = dateToStr(nextDueDateForBill(b));
+  showPaidBills = false;
   save(); renderBills(); renderAccounts(); renderDashboard();
 }
 function markBillUnpaid(id) {
