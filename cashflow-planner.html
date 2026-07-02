@@ -1866,17 +1866,22 @@ function showImportPreview() {
 }
 
 function confirmImport() {
-  // Skip dupes against existing state AND within the batch itself
+  // Skip exact/fuzzy dupes; dedupe within batch; flag same-month-amount matches
   const batchSeen = new Set();
   const newTx = pendingImport
     .filter(t => {
-      if (isFuzzyDupe(t)) return false; // already in state
+      const dupeStatus = isFuzzyDupe(t);
+      if (dupeStatus === 'exact' || dupeStatus === 'fuzzy') return false; // skip hard dupes
       const key = `${t.date}|${t.description}|${t.amount}`;
-      if (batchSeen.has(key)) return false; // duplicate within same import batch
+      if (batchSeen.has(key)) return false; // intra-batch dupe
       batchSeen.add(key);
       return true;
     })
-    .map(t => ({ ...t, reviewed: false }));
+    .map(t => ({
+      ...t,
+      reviewed: false,
+      possibleDupe: !!sameMonthAmountMatch(t) // flag same-month-amount matches
+    }));
   const skipped = pendingImport.length - newTx.length;
   state.transactions.push(...newTx);
   state.transactions.sort((a,b) => parseLocalDateStr(b.date) - parseLocalDateStr(a.date));
