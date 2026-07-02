@@ -3114,13 +3114,13 @@ function saveBudgetInline(cat) {
 
 let budgetChart = null;
 
-function budgetSpendColor(spent, limit) {
-  // Green (120°) → yellow (60°) → red (0°) based on % of limit
-  const pct = limit > 0 ? Math.min(spent / limit, 1.15) : 0;
-  const hue = Math.max(0, 120 - pct * 120);
-  const sat = 90 + Math.min(pct * 10, 10); // gets more saturated as it fills
-  const light = 48 - Math.min(pct * 8, 8); // gets slightly darker near red
-  return `hsl(${hue.toFixed(1)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`;
+const BUDGET_NEON = [
+  '#00f5ff','#ff00ff','#39ff14','#ff6600','#ff0055',
+  '#ccff00','#9d00ff','#ffdd00','#00ff9f','#ff00aa',
+  '#00aaff','#ff3300','#00ffcc','#ff77ff','#aaff00'
+];
+function budgetCatColor(index) {
+  return BUDGET_NEON[index % BUDGET_NEON.length];
 }
 
 function renderBudgetChart() {
