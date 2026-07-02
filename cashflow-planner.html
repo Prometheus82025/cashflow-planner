@@ -3101,6 +3101,7 @@ function renderBudgets() {
     if (budgetSort === 'limit') return limB - limA;
     return catA.localeCompare(catB); // name
   });
+  const excluded = state.settings.budgetWeekExclude || [];
   el.innerHTML = sortedBudgets.map(([cat, limit]) => {
     const spent = spendByCat[cat] || 0;
     const pct = Math.min((spent / limit) * 100, 100);
@@ -3109,6 +3110,7 @@ function renderBudgets() {
     const fillColor = over ? 'var(--red)' : warn ? 'var(--yellow)' : 'var(--green)';
     const safecat = cat.replace(/'/g, "\\'");
     const key = cat.replace(/\s/g, '_');
+    const isExcluded = excluded.includes(cat);
     const amountDisplay = budgetBulkMode
       ? `<input id="bulk-val-${key}" type="number" step="1" value="${limit}" style="width:100px;padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;color:var(--text)" />`
       : `<span id="budget-display-${key}" style="font-size:13px;color:var(--muted)">${fmt(spent)} / ${fmt(limit)}</span>
@@ -3117,9 +3119,11 @@ function renderBudgets() {
            <button class="btn btn-primary btn-sm" onclick="saveBudgetInline('${safecat}')">Save</button>
            <button class="btn btn-ghost btn-sm" onclick="cancelBudgetInline('${safecat}')">Cancel</button>
          </span>`;
+    const weeklyToggle = `<button class="btn btn-ghost btn-sm" onclick="toggleBudgetWeekly('${safecat}')" style="font-size:11px;padding:3px 8px;color:${isExcluded ? 'var(--muted)' : 'var(--green)'};border-color:${isExcluded ? 'var(--muted)' : 'var(--green)'}" title="${isExcluded ? 'Click to include in Budget This Week' : 'Click to exclude from Budget This Week'}">📅 ${isExcluded ? 'excluded' : 'weekly'}</button>`;
     const actionButtons = budgetBulkMode
       ? ''
-      : `<button class="btn btn-ghost btn-sm" onclick="startBudgetInlineEdit('${safecat}')">Edit</button>
+      : `${weeklyToggle}
+         <button class="btn btn-ghost btn-sm" onclick="startBudgetInlineEdit('${safecat}')">Edit</button>
          <button class="btn btn-danger btn-sm" onclick="deleteBudget('${safecat}')">Remove</button>`;
     return `<div class="card section-gap">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
