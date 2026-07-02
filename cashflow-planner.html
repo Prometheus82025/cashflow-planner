@@ -3101,38 +3101,6 @@ function saveBudgetInline(cat) {
 }
 
 
-let budgetBulkMode = false;
-
-function startBulkEdit() {
-  budgetBulkMode = true;
-  renderBudgets();
-  document.getElementById('bulk-edit-btn').style.display = 'none';
-  document.getElementById('bulk-save-btn').style.display = '';
-  document.getElementById('bulk-cancel-btn').style.display = '';
-}
-function cancelBulkEdit() {
-  budgetBulkMode = false;
-  renderBudgets();
-  document.getElementById('bulk-edit-btn').style.display = '';
-  document.getElementById('bulk-save-btn').style.display = 'none';
-  document.getElementById('bulk-cancel-btn').style.display = 'none';
-}
-function saveBulkEdit() {
-  const entries = Object.keys(state.budgets);
-  for (const cat of entries) {
-    const key = cat.replace(/\s/g, '_');
-    const input = document.getElementById('bulk-val-' + key);
-    if (!input) continue;
-    const val = parseFloat(input.value);
-    if (val > 0) state.budgets[cat] = val;
-  }
-  save();
-  budgetBulkMode = false;
-  renderBudgets();
-  document.getElementById('bulk-edit-btn').style.display = '';
-  document.getElementById('bulk-save-btn').style.display = 'none';
-  document.getElementById('bulk-cancel-btn').style.display = 'none';
-}
 
 function renderBudgets() {
   const el = document.getElementById('budgets-list');
