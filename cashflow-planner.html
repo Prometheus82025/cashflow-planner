@@ -1849,9 +1849,16 @@ function showImportPreview() {
 }
 
 function confirmImport() {
-  // Skip both exact AND fuzzy dupes automatically — no manual checkbox needed
+  // Skip dupes against existing state AND within the batch itself
+  const batchSeen = new Set();
   const newTx = pendingImport
-    .filter(t => !isFuzzyDupe(t))
+    .filter(t => {
+      if (isFuzzyDupe(t)) return false; // already in state
+      const key = `${t.date}|${t.description}|${t.amount}`;
+      if (batchSeen.has(key)) return false; // duplicate within same import batch
+      batchSeen.add(key);
+      return true;
+    })
     .map(t => ({ ...t, reviewed: false }));
   const skipped = pendingImport.length - newTx.length;
   state.transactions.push(...newTx);
