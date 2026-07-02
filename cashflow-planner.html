@@ -374,6 +374,27 @@
         </tbody>
       </table></div>
     </div>
+
+    <!-- PAID BILLS SECTION -->
+    <div id="paid-bills-section" style="display:none;margin-top:16px">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3 style="color:var(--muted)">✅ Paid This Cycle</h3>
+          <button class="btn btn-ghost btn-sm" onclick="showPaidBills=false;renderBills()">Hide</button>
+        </div>
+        <div class="table-scroll"><table>
+          <thead><tr>
+            <th>Bill</th>
+            <th>Category</th>
+            <th>Frequency</th>
+            <th>Amount</th>
+            <th>Next Due</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="paid-bills-table-body"></tbody>
+        </table></div>
+      </div>
+    </div>
   </div>
 
   <!-- INCOME FORM -->
