@@ -1402,38 +1402,67 @@ function renderBills() {
     return 0;
   }).filter(b => !currentFilter || b.category === currentFilter);
 
-  const paidCount = allSorted.filter(b => isBillPaid(b)).length;
-  const sorted = showPaidBills ? allSorted : allSorted.filter(b => !isBillPaid(b));
+  const unpaid = allSorted.filter(b => !isBillPaid(b));
+  const paid = allSorted.filter(b => isBillPaid(b));
 
-  if (!sorted.length && !paidCount) {
+  // ── Upcoming bills (main table) ──
+  if (!unpaid.length && !paid.length) {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>No bills in this category.</div></td></tr>`;
-    return;
+  } else if (!unpaid.length && paid.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">✅</div>All caught up! Every bill is paid this cycle.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = unpaid.map(b => {
+      const next = nextDueDateForBill(b);
+      const days = daysUntil(next);
+      const urgency = days <= 3 ? 'badge-red' : days <= 7 ? 'badge-yellow' : 'badge-green';
+      const dayLabel = days <= 0 ? 'Today!' : `${days}d`;
+      return `<tr>
+        <td><strong>${esc(b.name)}</strong></td>
+        <td>${catBadge(b.category)}</td>
+        <td style="font-size:12px;color:var(--muted)">${freqLabel(b)}</td>
+        <td style="color:var(--red);font-weight:600">${fmt(b.amount)}</td>
+        <td><span class="badge ${urgency}">${dayLabel}</span> ${next.toLocaleDateString()}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="markBillPaid(${b.id})">Mark Paid</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditBillModal(${b.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteBill(${b.id})">Remove</button>
+        </td>
+      </tr>`;
+    }).join('');
   }
-  if (!sorted.length && paidCount) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">✅</div>All caught up! ${paidCount} bill${paidCount > 1 ? 's' : ''} paid. <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="showPaidBills=true;renderBills()">Show paid</span></div></td></tr>`;
-    return;
+
+  // Footer toggle link on main table
+  if (paid.length) {
+    tbody.innerHTML += `<tr><td colspan="6" style="text-align:center;padding:10px;color:var(--muted);font-size:13px">
+      ${paid.length} paid bill${paid.length > 1 ? 's' : ''} this cycle —
+      <span style="color:var(--accent);cursor:pointer;text-decoration:underline"
+        onclick="showPaidBills=!showPaidBills;renderBills()">${showPaidBills ? 'hide' : 'show paid'}</span>
+    </td></tr>`;
   }
-  tbody.innerHTML = sorted.map(b => {
-    const next = nextDueDateForBill(b);
-    const days = daysUntil(next);
-    const paid = isBillPaid(b);
-    const urgency = paid ? 'badge-green' : days <= 3 ? 'badge-red' : days <= 7 ? 'badge-yellow' : 'badge-green';
-    const dayLabel = paid ? 'Paid' : days <= 0 ? 'Today!' : `${days}d`;
-    return `<tr>
-      <td><strong>${esc(b.name)}</strong></td>
-      <td>${catBadge(b.category)}</td>
-      <td style="font-size:12px;color:var(--muted)">${freqLabel(b)}</td>
-      <td style="color:var(--red);font-weight:600">${fmt(b.amount)}</td>
-      <td><span class="badge ${urgency}">${dayLabel}</span> ${next.toLocaleDateString()}</td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        ${paid
-          ? `<button class="btn btn-ghost btn-sm" onclick="markBillUnpaid(${b.id})">Unpay</button>`
-          : `<button class="btn btn-primary btn-sm" onclick="markBillPaid(${b.id})">Mark Paid</button>`}
-        <button class="btn btn-ghost btn-sm" onclick="openEditBillModal(${b.id})">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteBill(${b.id})">Remove</button>
-      </td>
-    </tr>`;
-  }).join('') + (paidCount && !showPaidBills ? `<tr><td colspan="6" style="text-align:center;padding:10px;color:var(--muted);font-size:13px">${paidCount} paid bill${paidCount > 1 ? 's' : ''} hidden — <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="showPaidBills=true;renderBills()">show</span></td></tr>` : paidCount && showPaidBills ? `<tr><td colspan="6" style="text-align:center;padding:10px;color:var(--muted);font-size:13px"><span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="showPaidBills=false;renderBills()">Hide paid bills</span></td></tr>` : '');
+
+  // ── Paid bills (separate section) ──
+  const paidSection = document.getElementById('paid-bills-section');
+  const paidBody = document.getElementById('paid-bills-table-body');
+  if (paid.length && showPaidBills) {
+    paidSection.style.display = 'block';
+    paidBody.innerHTML = paid.map(b => {
+      const next = nextDueDateForBill(b);
+      return `<tr style="opacity:.7">
+        <td><strong>${esc(b.name)}</strong></td>
+        <td>${catBadge(b.category)}</td>
+        <td style="font-size:12px;color:var(--muted)">${freqLabel(b)}</td>
+        <td style="color:var(--red);font-weight:600">${fmt(b.amount)}</td>
+        <td><span class="badge badge-green">Paid</span> Due ${next.toLocaleDateString()}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="markBillUnpaid(${b.id})">Unpay</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditBillModal(${b.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteBill(${b.id})">Remove</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } else {
+    paidSection.style.display = 'none';
+  }
 }
 
 // ─── EDIT BILL ───────────────────────────────────────────────────────────────
