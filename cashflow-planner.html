@@ -3113,11 +3113,15 @@ function saveBudgetInline(cat) {
 
 
 let budgetChart = null;
-const BUDGET_COLORS = [
-  '#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6',
-  '#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4',
-  '#a855f7','#84cc16','#e11d48','#0ea5e9','#d97706'
-];
+
+function budgetSpendColor(spent, limit) {
+  // Green (120°) → yellow (60°) → red (0°) based on % of limit
+  const pct = limit > 0 ? Math.min(spent / limit, 1.15) : 0;
+  const hue = Math.max(0, 120 - pct * 120);
+  const sat = 90 + Math.min(pct * 10, 10); // gets more saturated as it fills
+  const light = 48 - Math.min(pct * 8, 8); // gets slightly darker near red
+  return `hsl(${hue.toFixed(1)},${sat.toFixed(0)}%,${light.toFixed(0)}%)`;
+}
 
 function renderBudgetChart() {
   const chartCard = document.getElementById('budget-chart-card');
@@ -3144,12 +3148,12 @@ function renderBudgetChart() {
   const data = [];
   const colors = [];
   const catColors = {};
-  cats.forEach((cat, i) => {
+  cats.forEach((cat) => {
     const spent = spendByCat[cat] || 0;
     if (spent > 0) {
       labels.push(cat);
       data.push(spent);
-      const color = BUDGET_COLORS[i % BUDGET_COLORS.length];
+      const color = budgetSpendColor(spent, state.budgets[cat] || 1);
       colors.push(color);
       catColors[cat] = color;
     }
@@ -3157,7 +3161,7 @@ function renderBudgetChart() {
   if (remaining > 0) {
     labels.push('Remaining');
     data.push(remaining);
-    colors.push('rgba(100,116,139,0.3)');
+    colors.push('rgba(100,116,139,0.2)');
   }
 
   const ctx = document.getElementById('budget-donut-chart').getContext('2d');
