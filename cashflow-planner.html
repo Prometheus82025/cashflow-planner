@@ -777,6 +777,20 @@
   </div>
 </div>
 
+<!-- MARK BILL PAID MODAL -->
+<div class="modal-overlay" id="mark-paid-modal">
+  <div class="modal" style="max-width:420px">
+    <h3>Mark as Paid</h3>
+    <p id="mark-paid-bill-name" style="color:var(--muted);font-size:14px;margin-bottom:16px"></p>
+    <p style="font-size:13px;margin-bottom:12px;color:var(--text)">Deduct from which account?</p>
+    <div id="mark-paid-account-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-ghost" onclick="closeMarkPaidModal()">Cancel</button>
+      <button class="btn btn-ghost" onclick="confirmBillPaidSkip()" style="color:var(--muted)">Already paid — skip deduction</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT BILL MODAL -->
 <div class="modal-overlay" id="edit-bill-modal">
   <div class="modal">
