@@ -1968,7 +1968,7 @@ function findPossibleDupes() {
   return pairs;
 }
 
-function deleteDupeTx(deleteId, aId, bId) {
+function deleteDupeTx(deleteId) {
   state.transactions = state.transactions.filter(t => String(t.id) !== String(deleteId));
   logActivity('tx', 'Deleted duplicate transaction');
   save(); renderTransactions(); renderDashboard();
