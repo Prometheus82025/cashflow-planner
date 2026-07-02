@@ -3178,10 +3178,11 @@ function renderBudgetChart() {
           callbacks: {
             label: (c) => {
               const cat = c.label;
+              if (cat === 'Remaining') return ` Remaining: ${fmt(c.parsed)}`;
               const spent = spendByCat[cat] || 0;
               const limit = state.budgets[cat] || 0;
               const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
-              return ` ${cat}: ${fmt(spent)} spent of ${fmt(limit)} (${pct}%)`;
+              return ` ${cat}: ${fmt(spent)} of ${fmt(limit)} (${pct}%)`;
             }
           }
         }
