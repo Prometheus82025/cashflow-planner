@@ -3166,6 +3166,18 @@ function renderBudgetChart() {
   const totalSpent = cats.reduce((s, c) => s + (spendByCat[c] || 0), 0);
   const remaining = Math.max(0, totalBudget - totalSpent);
 
+  // Sort categories per wheel sort dropdown
+  const wheelSort = document.getElementById('budget-wheel-sort')?.value || 'name';
+  cats.sort((a, b) => {
+    const sa = spendByCat[a] || 0, sb = spendByCat[b] || 0;
+    const la = state.budgets[a] || 0, lb = state.budgets[b] || 0;
+    if (wheelSort === 'limit') return lb - la;
+    if (wheelSort === 'spent') return sb - sa;
+    if (wheelSort === 'pct') return (sb / lb) - (sa / la);
+    if (wheelSort === 'remaining') return (la - sa) - (lb - sb);
+    return a.localeCompare(b); // name
+  });
+
   // All categories sized by budget limit — always visible, neon color per category
   // Spent vs unspent shown via opacity: bright = fully spent, dim = unspent
   const labels = [];
