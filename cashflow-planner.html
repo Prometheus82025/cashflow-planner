@@ -3143,20 +3143,25 @@ function renderBudgetChart() {
   const totalSpent = cats.reduce((s, c) => s + (spendByCat[c] || 0), 0);
   const remaining = Math.max(0, totalBudget - totalSpent);
 
-  // All categories: segment sized by budget limit, neon color by index
+  // Segments sized by spending (neon color per category), plus gray remaining
   const labels = [];
   const data = [];
   const colors = [];
   const catColors = {};
   cats.forEach((cat, i) => {
-    const limit = state.budgets[cat] || 0;
-    if (limit <= 0) return;
+    const spent = spendByCat[cat] || 0;
+    if (spent <= 0) return;
     labels.push(cat);
-    data.push(limit);
+    data.push(spent);
     const color = budgetCatColor(i);
     colors.push(color);
     catColors[cat] = color;
   });
+  if (remaining > 0) {
+    labels.push('Remaining');
+    data.push(remaining);
+    colors.push('rgba(100,116,139,0.25)');
+  }
 
   const ctx = document.getElementById('budget-donut-chart').getContext('2d');
   if (budgetChart) budgetChart.destroy();
