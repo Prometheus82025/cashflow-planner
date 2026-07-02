@@ -1715,6 +1715,7 @@ async function processStatementWithAI(file) {
     if (!items.length) throw new Error('No transactions found in statement.');
 
     const accountId = document.getElementById('import-account').value;
+    if (!accountId) throw new Error('Select an account before importing.');
     pendingImport = items.map((item, i) => ({
       id: Date.now() + i,
       date: item.date || todayStr(),
