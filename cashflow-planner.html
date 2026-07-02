@@ -3173,9 +3173,11 @@ function renderBudgetChart() {
         tooltip: {
           callbacks: {
             label: (c) => {
-              const val = c.parsed;
-              const pct = totalBudget > 0 ? ((val / totalBudget) * 100).toFixed(1) : 0;
-              return ` ${fmt(val)} (${pct}%)`;
+              const cat = c.label;
+              const spent = spendByCat[cat] || 0;
+              const limit = state.budgets[cat] || 0;
+              const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+              return ` ${cat}: ${fmt(spent)} spent of ${fmt(limit)} (${pct}%)`;
             }
           }
         }
