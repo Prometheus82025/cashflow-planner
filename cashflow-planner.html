@@ -3012,11 +3012,13 @@ function setBudget() {
   save();
   document.getElementById('budget-amount').value = '';
   renderBudgets();
+  populateBillCategoryDropdowns();
 }
 
 function deleteBudget(cat) {
   delete state.budgets[cat];
   save(); renderBudgets();
+  populateBillCategoryDropdowns();
 }
 
 function startBudgetInlineEdit(cat) {
