@@ -2257,40 +2257,44 @@ function renderTransactions() {
 
   // ── DUPES MODE ──────────────────────────────────────────────────────────────
   if (txViewMode === 'dupes') {
-    const thead = document.querySelector('#page-transactions table thead tr');
-    if (thead) thead.innerHTML = '<th>Transaction A</th><th>Transaction B</th><th>Actions</th>';
+    document.getElementById('dupes-container').style.display = 'block';
+    document.getElementById('tx-table-wrap').style.display = 'none';
     document.getElementById('bulk-tx-bar').style.display = 'none';
     const pairs = findPossibleDupes();
     const dupesBadge = document.getElementById('dupes-badge');
     if (dupesBadge) { dupesBadge.style.display = pairs.length ? 'inline' : 'none'; dupesBadge.textContent = pairs.length; }
+    const container = document.getElementById('dupes-container');
     if (!pairs.length) {
-      tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><div class="empty-icon">✅</div>No possible duplicates found.</div></td></tr>';
+      container.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>No possible duplicates found.</div>';
       return;
     }
     const accMap = Object.fromEntries(state.accounts.map(a => [a.id, a.name]));
-    function txCard(t) {
-      const label = t.reviewed === false
-        ? `<span style="background:var(--yellow);color:#000;font-size:10px;padding:1px 6px;border-radius:999px;font-weight:700;margin-left:6px">INBOX</span>`
-        : `<span style="background:var(--surface2);color:var(--muted);font-size:10px;padding:1px 6px;border-radius:999px;margin-left:6px">HISTORY</span>`;
-      return `<div style="font-weight:600;font-size:14px">${esc(t.description.substring(0,50))}${label}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:3px">${t.date} &nbsp;·&nbsp; ${esc(accMap[t.account]||t.account||'—')} &nbsp;·&nbsp; <span style="color:${t.amount<0?'var(--red)':'var(--green)'}">${fmt(t.amount)}</span></div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${t.category||'—'}</div>`;
+    function dupeTxRow(t) {
+      const isInbox = t.reviewed === false;
+      const tag = isInbox
+        ? `<span style="background:var(--yellow);color:#000;font-size:10px;padding:2px 8px;border-radius:999px;font-weight:700">INBOX</span>`
+        : `<span style="background:var(--surface2);color:var(--muted);font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid var(--border)">HISTORY</span>`;
+      return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">${tag}
+            <span style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.description.substring(0,55))}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">${t.date} &nbsp;·&nbsp; ${esc(accMap[t.account]||t.account||'—')} &nbsp;·&nbsp; <span style="color:${t.amount<0?'var(--red)':'var(--green)');font-weight:600">${fmt(t.amount)}</span> &nbsp;·&nbsp; ${t.category||'—'}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="deleteDupeTx('${t.id}','${t.id}','')">Delete</button>
+      </div>`;
     }
-    tbody.innerHTML = pairs.map(({ a, b, reason }) => `
-      <tr id="dupe-row-${a.id}-${b.id}">
-        <td>
-          ${txCard(a)}
-          <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="deleteDupeTx('${a.id}','${a.id}','${b.id}')">Delete This One</button>
-        </td>
-        <td>
-          ${txCard(b)}
-          <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="deleteDupeTx('${b.id}','${a.id}','${b.id}')">Delete This One</button>
-        </td>
-        <td style="white-space:nowrap;vertical-align:top">
-          <div style="font-size:11px;color:var(--yellow);margin-bottom:8px">${reason}</div>
-          <button class="btn btn-ghost btn-sm" onclick="dismissDupe('${a.id}','${b.id}')">Not a Dupe</button>
-        </td>
-      </tr>`).join('');
+    container.innerHTML = pairs.map(({ a, b, reason }) => `
+      <div id="dupe-pair-${a.id}-${b.id}" style="margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:12px;color:var(--yellow)">⚠️ ${reason}</span>
+          <button class="btn btn-ghost btn-sm" onclick="dismissDupe('${a.id}','${b.id}')" style="flex-shrink:0">Not a Dupe</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:12px">
+          ${dupeTxRow(a)}
+          ${dupeTxRow(b)}
+        </div>
+      </div>`).join('');
     return;
   }
 
