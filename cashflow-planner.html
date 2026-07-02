@@ -2115,6 +2115,13 @@ function markTxReviewed(id) {
   } else {
     const catEl = document.getElementById('tx-cat-' + id);
     t.category = catEl ? catEl.value : (t.category || 'Other');
+    // Adjust the account balance to reflect this transaction
+    if (t.account) {
+      const acct = state.accounts.find(a => a.name === t.account || String(a.id) === String(t.account));
+      if (acct && acct.type !== 'credit') {
+        acct.balance = Math.round(((acct.balance || 0) + t.amount) * 100) / 100;
+      }
+    }
   }
 
   t.reviewed = true;
