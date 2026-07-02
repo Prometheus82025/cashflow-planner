@@ -3138,18 +3138,14 @@ function renderBudgets() {
     const safecat = cat.replace(/'/g, "\\'");
     const key = cat.replace(/\s/g, '_');
     const isExcluded = excluded.includes(cat);
-    const amountDisplay = budgetBulkMode
-      ? `<input id="bulk-val-${key}" type="number" step="1" value="${limit}" style="width:100px;padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;color:var(--text)" />`
-      : `<span id="budget-display-${key}" style="font-size:13px;color:var(--muted)">${fmt(spent)} / ${fmt(limit)}</span>
+    const amountDisplay = `<span id="budget-display-${key}" style="font-size:13px;color:var(--muted)">${fmt(spent)} / ${fmt(limit)}</span>
          <span id="budget-edit-inline-${key}" style="display:none;align-items:center;gap:4px">
            <input id="budget-edit-val-${key}" type="number" step="1" value="${limit}" style="width:90px;padding:4px 8px;font-size:13px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;color:var(--text)" onkeydown="if(event.key==='Enter')saveBudgetInline('${safecat}');if(event.key==='Escape')cancelBudgetInline('${safecat}')" />
            <button class="btn btn-primary btn-sm" onclick="saveBudgetInline('${safecat}')">Save</button>
            <button class="btn btn-ghost btn-sm" onclick="cancelBudgetInline('${safecat}')">Cancel</button>
          </span>`;
     const weeklyToggle = `<button class="btn btn-ghost btn-sm" onclick="toggleBudgetWeekly('${safecat}')" style="font-size:11px;padding:3px 8px;color:${isExcluded ? 'var(--muted)' : 'var(--green)'};border-color:${isExcluded ? 'var(--muted)' : 'var(--green)'}" title="${isExcluded ? 'Click to include in Budget This Week' : 'Click to exclude from Budget This Week'}">📅 ${isExcluded ? 'excluded' : 'weekly'}</button>`;
-    const actionButtons = budgetBulkMode
-      ? ''
-      : `${weeklyToggle}
+    const actionButtons = `${weeklyToggle}
          <button class="btn btn-ghost btn-sm" onclick="startBudgetInlineEdit('${safecat}')">Edit</button>
          <button class="btn btn-danger btn-sm" onclick="deleteBudget('${safecat}')">Remove</button>`;
     return `<div class="card section-gap">
@@ -3157,7 +3153,7 @@ function renderBudgets() {
         <div>${catBadge(cat)} <strong style="margin-left:6px">${cat}</strong></div>
         <div style="display:flex;align-items:center;gap:8px">
           ${amountDisplay}
-          ${over && !budgetBulkMode ? '<span class="badge badge-red">Over!</span>' : ''}
+          ${over ? '<span class="badge badge-red">Over!</span>' : ''}
           ${actionButtons}
         </div>
       </div>
