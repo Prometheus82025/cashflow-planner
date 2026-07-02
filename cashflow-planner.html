@@ -1921,6 +1921,13 @@ function setTxView(mode) {
   document.getElementById('view-monthly-btn').classList.toggle('active', mode === 'monthly');
   const histFilters = document.getElementById('tx-history-filters');
   histFilters.style.display = mode === 'history' ? 'flex' : 'none';
+  // Restore normal table when leaving dupes mode
+  if (mode !== 'dupes') {
+    const dc = document.getElementById('dupes-container');
+    const tw = document.getElementById('tx-table-wrap');
+    if (dc) dc.style.display = 'none';
+    if (tw) tw.style.display = '';
+  }
   renderTransactions();
 }
 function toggleWeekCollapse(key) { txWeekCollapsed[key] = !txWeekCollapsed[key]; renderTransactions(); }
