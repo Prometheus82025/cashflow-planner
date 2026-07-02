@@ -2741,7 +2741,7 @@ function renderDashboard() {
   // Alert — use safeSpendRaw so we still warn when balance is actually short
   const alertEl = document.getElementById('dash-alert');
   if (safeSpendRaw < 0) {
-    alertEl.innerHTML = `<div class="alert" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5">🚨 <strong>Warning:</strong> You're ${fmt(Math.abs(safeSpendRaw))} short after this week's bills and the $${buffer} buffer.</div>`;
+    alertEl.innerHTML = `<div class="alert" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5">🚨 <strong>Warning:</strong> You're ${fmt(Math.abs(safeSpendRaw))} short after this week's bills (${fmt(bills7Total)}), weekly budget (${fmt(weeklyBudgetTotal)}), and ${fmt(buffer)} buffer.</div>`;
   } else if (safeSpendRaw < 300) {
     alertEl.innerHTML = `<div class="alert alert-info">⚠️ <strong>Heads up:</strong> Only ${fmt(safeSpendRaw)} safe to spend after this week's bills. Spend carefully.</div>`;
   } else {
