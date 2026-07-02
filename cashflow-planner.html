@@ -3017,8 +3017,20 @@ function setBudget() {
 
 function deleteBudget(cat) {
   delete state.budgets[cat];
+  // Also remove from exclusion list if present
+  state.settings.budgetWeekExclude = (state.settings.budgetWeekExclude || []).filter(c => c !== cat);
   save(); renderBudgets();
   populateBillCategoryDropdowns();
+}
+
+function toggleBudgetWeekly(cat) {
+  const excl = state.settings.budgetWeekExclude || [];
+  if (excl.includes(cat)) {
+    state.settings.budgetWeekExclude = excl.filter(c => c !== cat);
+  } else {
+    state.settings.budgetWeekExclude = [...excl, cat];
+  }
+  save(); renderBudgets(); renderDashboard();
 }
 
 function startBudgetInlineEdit(cat) {
