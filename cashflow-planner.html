@@ -2651,14 +2651,25 @@ function renderDashboard() {
   document.getElementById('dash-need-week').className = 'stat-value yellow';
   document.getElementById('dash-need-week-by').textContent = 'by ' + in7.toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
-  // Safe to Spend = balance − bills due this week − buffer
+  // Budget This Week = sum of all monthly budgets / 4.33
+  const monthlyBudgetTotal = Object.values(state.budgets || {}).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+  const weeklyBudgetTotal = Math.round(monthlyBudgetTotal / 4.33);
+  const budgetWeekEl = document.getElementById('dash-budget-week');
+  if (budgetWeekEl) {
+    budgetWeekEl.textContent = fmt(weeklyBudgetTotal);
+    document.getElementById('dash-budget-week-sub').textContent = weeklyBudgetTotal > 0
+      ? `est. from ${fmt(monthlyBudgetTotal)}/mo budgets`
+      : 'set budgets to calculate';
+  }
+
+  // Safe to Spend = balance − bills this week − weekly budget − buffer
   const buffer = state.settings.buffer || 200;
-  const safeSpendRaw = totalBalance - bills7Total - buffer;
+  const safeSpendRaw = totalBalance - bills7Total - weeklyBudgetTotal - buffer;
   const safeEl = document.getElementById('dash-safe-spend');
   const safeSpendDisplay = Math.max(0, safeSpendRaw);
   safeEl.textContent = fmt(safeSpendDisplay);
   safeEl.className = 'stat-value ' + (safeSpendRaw < 0 ? 'red' : safeSpendRaw < buffer ? 'yellow' : 'green');
-  document.getElementById('dash-safe-sub').textContent = `after ${fmt(bills7Total)} in bills this week`;
+  document.getElementById('dash-safe-sub').textContent = `after bills, budget & ${fmt(buffer)} buffer`;
 
   const warnEl = document.getElementById('dash-safe-warning');
   if (safeSpendRaw < 0) {
