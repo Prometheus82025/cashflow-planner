@@ -634,6 +634,16 @@
   </div>
   <div class="section-sub">Set monthly spending limits per category. Progress bars update from your imported transactions.</div>
 
+  <!-- BUDGET DONUT CHART -->
+  <div class="card section-gap" id="budget-chart-card" style="display:none">
+    <div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">
+      <div style="flex:0 0 240px;height:240px;position:relative">
+        <canvas id="budget-donut-chart"></canvas>
+      </div>
+      <div style="flex:1;min-width:200px" id="budget-chart-legend"></div>
+    </div>
+  </div>
+
   <div class="card section-gap">
     <div class="card-title">Set Budget Limit</div>
     <div class="form-row cols-3">
