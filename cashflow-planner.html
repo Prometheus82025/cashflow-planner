@@ -1227,22 +1227,25 @@ function isBillPaid(b) {
 function markBillPaid(id) {
   const b = state.bills.find(x => x.id === id);
   if (!b) return;
-  if (!state.accounts.length) { alert('Add an account first before marking bills paid.'); return; }
-  const opts = state.accounts.map((a, i) => `${i}: ${a.name} (${fmt(a.balance)})`).join('\n');
-  const input = prompt(`Deduct ${fmt(b.amount)} from which account?\n\n${opts}\n\nEnter the number:`);
+  const opts = (state.accounts.length
+    ? state.accounts.map((a, i) => `${i}: ${a.name} (${fmt(a.balance)})`).join('\n') + '\n\nS: Already paid — just mark it off (no deduction)'
+    : 'No accounts set up.\n\nS: Already paid — just mark it off (no deduction)');
+  const input = prompt(`Deduct ${fmt(b.amount)} from which account?\n\n${opts}\n\nEnter the number, or S to skip deduction:`);
   if (input === null) return;
-  const idx = parseInt(input);
-  const acct = state.accounts[idx];
-  if (!acct) { alert('Invalid selection.'); return; }
-  acct.balance = (acct.balance || 0) - b.amount;
-  state.transactions.push({
-    id: Date.now(),
-    date: todayStr(),
-    description: `${b.name} (bill payment)`,
-    amount: -b.amount,
-    category: b.category || 'Bills',
-    account: acct.name
-  });
+  if (input.trim().toLowerCase() !== 's') {
+    const idx = parseInt(input);
+    const acct = state.accounts[idx];
+    if (!acct) { alert('Invalid selection.'); return; }
+    acct.balance = (acct.balance || 0) - b.amount;
+    state.transactions.push({
+      id: Date.now(),
+      date: todayStr(),
+      description: `${b.name} (bill payment)`,
+      amount: -b.amount,
+      category: b.category || 'Bills',
+      account: acct.name
+    });
+  }
   b.paidUntil = dateToStr(nextDueDateForBill(b));
   showPaidBills = false;
   save(); renderBills(); renderAccounts(); renderDashboard();
