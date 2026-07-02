@@ -3037,6 +3037,44 @@ function toggleBudgetWeekly(cat) {
   save(); renderBudgets(); renderDashboard();
 }
 
+function syncPaidBillsToTransactions() {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  let created = 0;
+  let idBase = Date.now();
+  for (const b of state.bills) {
+    if (!isBillPaid(b)) continue;
+    // Skip if a transaction already exists this month for this bill
+    const exists = state.transactions.some(t => {
+      const d = parseLocalDateStr(t.date);
+      return d.getMonth() === currentMonth
+          && d.getFullYear() === currentYear
+          && t.description.includes(b.name);
+    });
+    if (!exists) {
+      state.transactions.push({
+        id: idBase++,
+        date: todayStr(),
+        description: b.name + ' (bill payment)',
+        amount: -Math.abs(b.amount),
+        category: b.category || 'Bills',
+        account: ''
+      });
+      created++;
+    }
+  }
+  if (created > 0) {
+    save();
+    renderBudgets();
+    renderTransactions();
+    renderDashboard();
+    alert(`Added ${created} transaction${created !== 1 ? 's' : ''} for paid bills. Budgets are now up to date.`);
+  } else {
+    alert('All paid bills already have transactions — nothing to sync.');
+  }
+}
+
 function startBudgetInlineEdit(cat) {
   const key = cat.replace(/\s/g, '_');
   document.getElementById('budget-display-' + key).style.display = 'none';
