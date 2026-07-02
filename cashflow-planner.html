@@ -1935,17 +1935,21 @@ function findPossibleDupes() {
       const a = tx[i], b = tx[j];
       const key = [a.id, b.id].sort().join('-');
       if (seen.has(key) || dismissed.has(key)) continue;
-      if (a.amount !== b.amount) continue; // must be exact same amount
+      if (Math.abs(a.amount) !== Math.abs(b.amount)) continue; // same absolute amount
+      if (!a.date || !b.date) continue;
+      // Must be same calendar month
+      if (a.date.substring(0, 7) !== b.date.substring(0, 7)) continue;
       const dA = parseLocalDateStr(a.date), dB = parseLocalDateStr(b.date);
       const daysDiff = Math.abs((dA - dB) / 86400000);
-      if (daysDiff > 5) continue; // within 5 days
       let reason = '';
       if (a.date === b.date && a.description === b.description) {
-        reason = 'Exact match — same date, description, amount';
+        reason = 'Exact match — same date, description & amount';
       } else if (a.date === b.date) {
         reason = 'Same date & amount, different description';
+      } else if (a.description === b.description) {
+        reason = `Same description & amount, ${Math.round(daysDiff)} day${daysDiff!==1?'s':''} apart`;
       } else {
-        reason = `Same amount, ${Math.round(daysDiff)} day${daysDiff!==1?'s':''} apart`;
+        reason = `Same amount (${fmt(Math.abs(a.amount))}) this month — different descriptions`;
       }
       pairs.push({ a, b, reason });
       seen.add(key);
