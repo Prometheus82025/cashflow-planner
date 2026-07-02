@@ -3196,13 +3196,13 @@ function renderBudgetChart() {
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto">
-      ${cats.filter(c => (state.budgets[c] || 0) > 0).map(cat => {
+      ${cats.filter(c => (state.budgets[c] || 0) > 0).map((cat, i) => {
         const spent = spendByCat[cat] || 0;
         const limit = state.budgets[cat] || 0;
         const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
-        const color = budgetSpendColor(spent, limit);
+        const color = budgetCatColor(i);
         return `<div style="display:flex;align-items:center;gap:8px;font-size:13px">
-          <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0"></span>
+          <span style="width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};flex-shrink:0"></span>
           <span style="flex:1;color:var(--text)">${cat}</span>
           <span style="color:var(--muted)">${fmt(spent)} / ${fmt(limit)}</span>
           <span style="color:${pct >= 100 ? 'var(--red)' : pct >= 75 ? 'var(--yellow)' : 'var(--green)'};width:38px;text-align:right;font-weight:600">${pct}%</span>
