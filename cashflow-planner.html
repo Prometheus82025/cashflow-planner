@@ -1402,34 +1402,50 @@ function renderBills() {
     return 0;
   }).filter(b => !currentFilter || b.category === currentFilter);
 
-  const unpaid = allSorted.filter(b => !isBillPaid(b));
-  const paid = allSorted.filter(b => isBillPaid(b));
+  const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+  const cy = todayMidnight.getFullYear(), cm = todayMidnight.getMonth();
+
+  // Get a bill's due date within the current month (or null if not relevant this month)
+  function getBillThisMonthDate(b) {
+    if (!b.frequency || b.frequency === 'monthly') {
+      return new Date(cy, cm, b.day || 1); // always has a date this month
+    }
+    const next = nextDueDateForBill(b);
+    if (next.getFullYear() === cy && next.getMonth() === cm) return next;
+    return null; // due next month or beyond — don't show yet
+  }
+
+  const allUnpaid = allSorted.filter(b => !isBillPaid(b));
+  const allPaid   = allSorted.filter(b => isBillPaid(b));
+
+  // Only show bills relevant to this month
+  const unpaid = allUnpaid.filter(b => getBillThisMonthDate(b) !== null);
+  const paid   = allPaid.filter(b => {
+    if (!b.frequency || b.frequency === 'monthly') return true; // monthly always belongs to this month
+    // biweekly/weekly: show in paid section if paidUntil is this month
+    if (!b.paidUntil) return false;
+    const pu = parseLocalDateStr(b.paidUntil);
+    return pu.getFullYear() === cy && pu.getMonth() === cm;
+  });
 
   // ── Upcoming bills (main table) ──
   if (!unpaid.length && !paid.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div>No bills in this category.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📄</div>No bills this month.</div></td></tr>`;
   } else if (!unpaid.length && paid.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">✅</div>All caught up! Every bill is paid this cycle.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">✅</div>All caught up! Every bill is paid this month.</div></td></tr>`;
   } else {
-    const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
     tbody.innerHTML = unpaid.map(b => {
-      const next = nextDueDateForBill(b);
-      // For monthly bills: if the due day already passed this month, show the actual overdue date
-      let displayDate = next;
-      let isOverdue = false;
-      if (!b.frequency || b.frequency === 'monthly') {
-        const thisMonthDue = new Date(todayMidnight.getFullYear(), todayMidnight.getMonth(), b.day || 1);
-        if (thisMonthDue < todayMidnight) { displayDate = thisMonthDue; isOverdue = true; }
-      }
-      const days = daysUntil(displayDate);
+      const thisMonthDate = getBillThisMonthDate(b);
+      const isOverdue = thisMonthDate < todayMidnight;
+      const days = daysUntil(thisMonthDate);
       const urgency = isOverdue ? 'badge-red' : days <= 3 ? 'badge-red' : days <= 7 ? 'badge-yellow' : 'badge-green';
-      const dayLabel = isOverdue ? 'Overdue' : days <= 0 ? 'Today!' : `${days}d`;
+      const dayLabel = isOverdue ? 'Overdue' : days === 0 ? 'Today!' : `${days}d`;
       return `<tr>
         <td><strong>${esc(b.name)}</strong></td>
         <td>${catBadge(b.category)}</td>
         <td style="font-size:12px;color:var(--muted)">${freqLabel(b)}</td>
         <td style="color:var(--red);font-weight:600">${fmt(b.amount)}</td>
-        <td><span class="badge ${urgency}">${dayLabel}</span> ${displayDate.toLocaleDateString()}</td>
+        <td><span class="badge ${urgency}">${dayLabel}</span> ${thisMonthDate.toLocaleDateString()}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="markBillPaid(${b.id})">Mark Paid</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditBillModal(${b.id})">Edit</button>
@@ -1442,7 +1458,7 @@ function renderBills() {
   // Footer toggle link on main table
   if (paid.length) {
     tbody.innerHTML += `<tr><td colspan="6" style="text-align:center;padding:10px;color:var(--muted);font-size:13px">
-      ${paid.length} paid bill${paid.length > 1 ? 's' : ''} this cycle —
+      ${paid.length} paid bill${paid.length > 1 ? 's' : ''} this month —
       <span style="color:var(--accent);cursor:pointer;text-decoration:underline"
         onclick="showPaidBills=!showPaidBills;renderBills()">${showPaidBills ? 'hide' : 'show paid'}</span>
     </td></tr>`;
@@ -1454,13 +1470,13 @@ function renderBills() {
   if (paid.length && showPaidBills) {
     paidSection.style.display = 'block';
     paidBody.innerHTML = paid.map(b => {
-      const next = nextDueDateForBill(b);
+      const thisMonthDate = getBillThisMonthDate(b) || parseLocalDateStr(b.paidUntil);
       return `<tr style="opacity:.7">
         <td><strong>${esc(b.name)}</strong></td>
         <td>${catBadge(b.category)}</td>
         <td style="font-size:12px;color:var(--muted)">${freqLabel(b)}</td>
         <td style="color:var(--red);font-weight:600">${fmt(b.amount)}</td>
-        <td><span class="badge badge-green">Paid</span> Due ${next.toLocaleDateString()}</td>
+        <td><span class="badge badge-green">Paid</span> ${thisMonthDate.toLocaleDateString()}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-ghost btn-sm" onclick="markBillUnpaid(${b.id})">Unpay</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditBillModal(${b.id})">Edit</button>
