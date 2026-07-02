@@ -1821,22 +1821,35 @@ function isFuzzyDupe(t) {
   return null;
 }
 
+function sameMonthAmountMatch(t) {
+  // Returns an existing transaction with the same amount in the same calendar month
+  const mo = t.date ? t.date.substring(0, 7) : '';
+  if (!mo) return null;
+  return state.transactions.find(x =>
+    x.date && x.date.substring(0, 7) === mo &&
+    Math.abs(x.amount) === Math.abs(t.amount) &&
+    !(x.date === t.date && x.description === t.description)
+  ) || null;
+}
+
 function showImportPreview() {
   document.getElementById('import-preview').style.display = '';
   const tbody = document.getElementById('preview-table-body');
   const preview = pendingImport.slice(0, 50);
-  let fuzzyCount = 0;
+  let flagCount = 0;
   let skipCount = 0;
   tbody.innerHTML = preview.map(t => {
     const dupeStatus = isFuzzyDupe(t);
-    const isDupe = !!dupeStatus;
-    if (isDupe) skipCount++;
-    const note = dupeStatus === 'exact'
+    const monthMatch = !dupeStatus ? sameMonthAmountMatch(t) : null;
+    if (dupeStatus === 'exact' || dupeStatus === 'fuzzy') skipCount++;
+    else if (monthMatch) flagCount++;
+    const note = (dupeStatus === 'exact' || dupeStatus === 'fuzzy')
       ? `<span style="color:var(--muted);font-size:11px">already logged — skipping</span>`
-      : isDupe
-      ? `<span style="color:var(--yellow);font-size:11px">⚠️ possible dupe — skipping</span>`
+      : monthMatch
+      ? `<span style="color:var(--yellow);font-size:11px">⚠️ ${fmt(Math.abs(t.amount))} also on ${monthMatch.date} — flagging</span>`
       : `<span style="color:var(--green);font-size:11px">✓ new</span>`;
-    return `<tr style="${isDupe ? 'opacity:.4' : ''}">
+    const isSkip = dupeStatus === 'exact' || dupeStatus === 'fuzzy';
+    return `<tr style="${isSkip ? 'opacity:.4' : ''}">
       <td>${t.date}</td>
       <td>${esc(t.description.substring(0,50))}</td>
       <td style="color:${t.amount<0?'var(--red)':'var(--green)'};font-weight:600">${fmt(t.amount)}</td>
@@ -1847,7 +1860,9 @@ function showImportPreview() {
     tbody.innerHTML += `<tr><td colspan="4" style="color:var(--muted);text-align:center">… and ${pendingImport.length - 50} more</td></tr>`;
   }
   const newCount = pendingImport.length - skipCount;
-  document.getElementById('preview-count').textContent = `${pendingImport.length} found · ${newCount} new · ${skipCount} skipping`;
+  let summary = `${pendingImport.length} found · ${newCount} importing · ${skipCount} skipping`;
+  if (flagCount) summary += ` · ${flagCount} flagged for review`;
+  document.getElementById('preview-count').textContent = summary;
 }
 
 function confirmImport() {
