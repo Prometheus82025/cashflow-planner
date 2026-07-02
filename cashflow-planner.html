@@ -2151,12 +2151,12 @@ function markTxReviewed(id) {
   } else {
     const catEl = document.getElementById('tx-cat-' + id);
     t.category = catEl ? catEl.value : (t.category || 'Other');
-    if (t.amount < 0) {
-      // Try lookup by ID (stored as string from select value), then by name
+    // Deduct from account if it's an expense (category is not Income)
+    if (t.category !== 'Income' && t.category !== 'Transfer') {
       const acct = state.accounts.find(a => String(a.id) === String(t.account))
                 || state.accounts.find(a => a.name === t.account);
       if (acct && acct.type !== 'credit') {
-        acct.balance = Math.round(((acct.balance || 0) + t.amount) * 100) / 100;
+        acct.balance = Math.round(((acct.balance || 0) - Math.abs(t.amount)) * 100) / 100;
       }
     }
   }
