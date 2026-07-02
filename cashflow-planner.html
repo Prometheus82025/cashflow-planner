@@ -3143,18 +3143,17 @@ function renderBudgetChart() {
   const totalSpent = cats.reduce((s, c) => s + (spendByCat[c] || 0), 0);
   const remaining = Math.max(0, totalBudget - totalSpent);
 
-  // All categories: segment sized by budget limit, color by spend %
+  // All categories: segment sized by budget limit, neon color by index
   const labels = [];
   const data = [];
   const colors = [];
   const catColors = {};
-  cats.forEach((cat) => {
+  cats.forEach((cat, i) => {
     const limit = state.budgets[cat] || 0;
     if (limit <= 0) return;
-    const spent = spendByCat[cat] || 0;
     labels.push(cat);
     data.push(limit);
-    const color = budgetSpendColor(spent, limit);
+    const color = budgetCatColor(i);
     colors.push(color);
     catColors[cat] = color;
   });
