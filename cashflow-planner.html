@@ -1125,6 +1125,7 @@ function updateImportAccountSelect() {
 
 // ─── BILLS ───────────────────────────────────────────────────────────────────
 let billSortCol = 'due', billSortDir = 1; // 1 = asc, -1 = desc
+let showPaidBills = false;
 
 function setBillSort(col) {
   if (billSortCol === col) billSortDir *= -1;
