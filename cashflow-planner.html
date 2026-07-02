@@ -1318,6 +1318,21 @@ function markBillUnpaid(id) {
   save(); renderBills(); renderDashboard();
 }
 
+// ─── BILL CATEGORY DROPDOWN SYNC ─────────────────────────────────────────────
+const BILL_CATEGORY_FALLBACK = ['Housing','Utilities','Subscriptions','Insurance','Loans','Transportation','Food','Groceries','Health','Personal Care','Pets','Baby','Shopping','Entertainment','Other'];
+
+function populateBillCategoryDropdowns(selectedAdd, selectedEdit) {
+  const budgetCats = Object.keys(state.budgets || {});
+  const cats = budgetCats.length
+    ? [...budgetCats].includes('Other') ? budgetCats : [...budgetCats, 'Other']
+    : BILL_CATEGORY_FALLBACK;
+  const makeOpts = (sel) => cats.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${c}</option>`).join('');
+  const addEl = document.getElementById('bill-category');
+  const editEl = document.getElementById('edit-bill-category');
+  if (addEl) addEl.innerHTML = makeOpts(selectedAdd !== undefined ? selectedAdd : (addEl.value || cats[0]));
+  if (editEl) editEl.innerHTML = makeOpts(selectedEdit !== undefined ? selectedEdit : (editEl.value || cats[0]));
+}
+
 // ─── BILL MATCHING AFTER IMPORT ───────────────────────────────────────────────
 function findBillMatches(transactions) {
   const matches = [];
