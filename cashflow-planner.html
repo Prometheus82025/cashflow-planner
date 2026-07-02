@@ -1807,15 +1807,17 @@ function parseTransactions(rows) {
 }
 
 function isFuzzyDupe(t) {
-  // Exact dupe
+  // Exact dupe: same date + description + amount
   const exactKey = `${t.date}|${t.description}|${t.amount}`;
   const exactSet = new Set(state.transactions.map(x => `${x.date}|${x.description}|${x.amount}`));
   if (exactSet.has(exactKey)) return 'exact';
-  // Fuzzy: same date + same amount, different description
-  const fuzzy = state.transactions.find(x =>
-    x.date === t.date && Math.abs(x.amount) === Math.abs(t.amount) && x.description !== t.description
+  // Same description + amount, within 3 days (bank pending → posted)
+  const sameDesc = state.transactions.find(x =>
+    x.description === t.description &&
+    Math.abs(x.amount) === Math.abs(t.amount) &&
+    Math.abs((parseLocalDateStr(x.date) - parseLocalDateStr(t.date)) / 86400000) <= 3
   );
-  if (fuzzy) return `possible duplicate of "${fuzzy.description}"`;
+  if (sameDesc) return 'fuzzy';
   return null;
 }
 
