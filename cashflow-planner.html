@@ -1327,11 +1327,19 @@ function populateBillCategoryDropdowns(selectedAdd, selectedEdit) {
   const cats = budgetCats.length
     ? [...budgetCats].includes('Other') ? budgetCats : [...budgetCats, 'Other']
     : BILL_CATEGORY_FALLBACK;
+  // Extra categories always available in transactions but not budget-tracked
+  const txExtras = ['Transfer', 'Income'];
   const makeOpts = (sel) => cats.map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${c}</option>`).join('');
+  const makeTxOpts = (sel) => [...cats, ...txExtras].map(c => `<option value="${c}"${c === sel ? ' selected' : ''}>${c}</option>`).join('');
   const addEl = document.getElementById('bill-category');
   const editEl = document.getElementById('edit-bill-category');
+  const bulkTxEl = document.getElementById('bulk-tx-category');
   if (addEl) addEl.innerHTML = makeOpts(selectedAdd !== undefined ? selectedAdd : (addEl.value || cats[0]));
   if (editEl) editEl.innerHTML = makeOpts(selectedEdit !== undefined ? selectedEdit : (editEl.value || cats[0]));
+  if (bulkTxEl) {
+    const curVal = bulkTxEl.value;
+    bulkTxEl.innerHTML = `<option value="">— Change category to… —</option>` + makeTxOpts(curVal);
+  }
 }
 
 // ─── BILL MATCHING AFTER IMPORT ───────────────────────────────────────────────
