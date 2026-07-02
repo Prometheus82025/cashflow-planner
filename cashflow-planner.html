@@ -2151,10 +2151,7 @@ function markTxReviewed(id) {
   } else {
     const catEl = document.getElementById('tx-cat-' + id);
     t.category = catEl ? catEl.value : (t.category || 'Other');
-    // Deduct from account balance only if checkbox is checked
-    const deductEl = document.getElementById('tx-deduct-' + id);
-    const shouldDeduct = deductEl ? deductEl.checked : false;
-    if (shouldDeduct && t.amount < 0 && t.account) {
+    if (t.amount < 0 && t.account) {
       const acct = state.accounts.find(a => a.name === t.account || String(a.id) === String(t.account));
       if (acct && acct.type !== 'credit') {
         acct.balance = Math.round(((acct.balance || 0) + t.amount) * 100) / 100;
