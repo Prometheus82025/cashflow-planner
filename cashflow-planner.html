@@ -3162,7 +3162,7 @@ function renderBudgetChart() {
   if (budgetChart) budgetChart.destroy();
   budgetChart = new Chart(ctx, {
     type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#1e2235', hoverOffset: 6 }] },
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 3, borderColor: '#0d0f1e', hoverOffset: 10, hoverBorderWidth: 2, hoverBorderColor: colors }] },
     options: {
       responsive: true,
       maintainAspectRatio: true,
