@@ -3840,6 +3840,8 @@ loadOpenAIKey();
 updateUndoButton();
 renderDashboard();
 populateBillCategoryDropdowns();
+const manualDateEl = document.getElementById('manual-tx-date');
+if (manualDateEl) manualDateEl.value = todayStr();
 updateImportAccountSelect();
 renderSettings();
 // Auto-pull on load if credentials are configured
