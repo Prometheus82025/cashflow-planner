@@ -1228,9 +1228,52 @@ function saveAccount(id) {
   save(); renderAccounts(); renderDashboard();
 }
 function updateImportAccountSelect() {
-  const sel = document.getElementById('import-account');
-  sel.innerHTML = '<option value="">— Select account —</option>' +
+  const opts = '<option value="">— Select account —</option>' +
     state.accounts.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  document.getElementById('import-account').innerHTML = opts;
+  const manualSel = document.getElementById('manual-tx-account');
+  if (manualSel) manualSel.innerHTML = opts;
+}
+
+let manualTxType = 'expense';
+function setManualTxType(type) {
+  manualTxType = type;
+  document.getElementById('manual-tx-expense-btn').classList.toggle('active', type === 'expense');
+  document.getElementById('manual-tx-income-btn').classList.toggle('active', type === 'income');
+}
+
+function addManualTransaction() {
+  const dateVal = document.getElementById('manual-tx-date').value;
+  const desc = document.getElementById('manual-tx-desc').value.trim();
+  const amtRaw = parseFloat(document.getElementById('manual-tx-amount').value);
+  const accountId = document.getElementById('manual-tx-account').value;
+  const category = document.getElementById('manual-tx-category').value;
+
+  if (!dateVal) return alert('Please enter a date.');
+  if (!desc) return alert('Please enter a description.');
+  if (!amtRaw || amtRaw <= 0) return alert('Please enter a positive amount.');
+
+  const amount = manualTxType === 'expense' ? -Math.abs(amtRaw) : Math.abs(amtRaw);
+  const acct = state.accounts.find(a => String(a.id) === String(accountId));
+
+  state.transactions.push({
+    id: Date.now(),
+    date: dateVal,
+    description: desc,
+    amount,
+    category: category || 'Other',
+    account: acct ? acct.name : (accountId || ''),
+    reviewed: false
+  });
+
+  save();
+  renderTransactions();
+  renderDashboard();
+
+  // Clear form
+  document.getElementById('manual-tx-desc').value = '';
+  document.getElementById('manual-tx-amount').value = '';
+  setTxView('inbox');
 }
 
 // ─── BILLS ───────────────────────────────────────────────────────────────────
