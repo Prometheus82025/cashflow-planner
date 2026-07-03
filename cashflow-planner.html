@@ -470,6 +470,46 @@
     <div id="ai-import-status" style="display:none;margin-top:10px;font-size:13px;color:var(--muted);text-align:center"></div>
   </div>
 
+  <!-- MANUAL TRANSACTION ENTRY -->
+  <div class="card section-gap">
+    <div class="card-title">Add Transaction Manually</div>
+    <div class="form-row cols-4">
+      <div>
+        <label>Date</label>
+        <input type="date" id="manual-tx-date" />
+      </div>
+      <div>
+        <label>Description</label>
+        <input type="text" id="manual-tx-desc" placeholder="e.g. Walmart, Netflix…" />
+      </div>
+      <div>
+        <label>Amount ($)</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="manual-tx-amount" placeholder="0.00" step="0.01" min="0" style="flex:1" />
+          <div class="type-toggle" style="margin:0">
+            <button id="manual-tx-expense-btn" class="active" onclick="setManualTxType('expense')">Expense</button>
+            <button id="manual-tx-income-btn" onclick="setManualTxType('income')">Income</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label>Account</label>
+        <select id="manual-tx-account">
+          <option value="">— Select account —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row cols-2" style="margin-top:8px">
+      <div>
+        <label>Category</label>
+        <select id="manual-tx-category"></select>
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn btn-primary" onclick="addManualTransaction()" style="width:100%">+ Add to Inbox</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PREVIEW TABLE -->
   <div id="import-preview" style="display:none" class="section-gap">
     <div class="table-wrap">
