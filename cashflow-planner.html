@@ -1441,11 +1441,16 @@ function populateBillCategoryDropdowns(selectedAdd, selectedEdit) {
   const addEl = document.getElementById('bill-category');
   const editEl = document.getElementById('edit-bill-category');
   const bulkTxEl = document.getElementById('bulk-tx-category');
+  const manualCatEl = document.getElementById('manual-tx-category');
   if (addEl) addEl.innerHTML = makeOpts(selectedAdd !== undefined ? selectedAdd : (addEl.value || cats[0]));
   if (editEl) editEl.innerHTML = makeOpts(selectedEdit !== undefined ? selectedEdit : (editEl.value || cats[0]));
   if (bulkTxEl) {
     const curVal = bulkTxEl.value;
     bulkTxEl.innerHTML = `<option value="">— Change category to… —</option>` + makeTxOpts(curVal);
+  }
+  if (manualCatEl) {
+    const curVal = manualCatEl.value;
+    manualCatEl.innerHTML = makeTxOpts(curVal || cats[0]);
   }
 }
 
