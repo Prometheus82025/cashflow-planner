@@ -1327,10 +1327,12 @@ function toggleBillDueField() {
 
 function addBill() {
   const name = document.getElementById('bill-name').value.trim();
-  const amount = parseFloat(document.getElementById('bill-amount').value);
+  const linkedAccountId = document.getElementById('bill-link-account').value || null;
+  const amount = linkedAccountId ? 0 : parseFloat(document.getElementById('bill-amount').value);
   const frequency = document.getElementById('bill-frequency').value;
   const category = document.getElementById('bill-category').value;
-  if (!name || !amount) return alert('Fill in name and amount.');
+  if (!name) return alert('Fill in a bill name.');
+  if (!linkedAccountId && !amount) return alert('Enter an amount, or link a credit account.');
 
   let day = null, nextDate = null;
   if (frequency === 'monthly') {
@@ -1341,13 +1343,15 @@ function addBill() {
     if (!nextDate) return alert('Pick the next due date.');
   }
 
-  state.bills.push({ id: Date.now(), name, amount, frequency, day, nextDate, category });
-  logActivity('bill', `Added bill: ${name} (${fmt(amount)})`);
+  state.bills.push({ id: Date.now(), name, amount, frequency, day, nextDate, category, linkedAccountId });
+  logActivity('bill', `Added bill: ${name}${linkedAccountId ? ' (linked)' : ' (' + fmt(amount) + ')'}`);
   save();
   document.getElementById('bill-name').value = '';
   document.getElementById('bill-amount').value = '';
   document.getElementById('bill-day').value = '';
   document.getElementById('bill-next-date').value = '';
+  document.getElementById('bill-link-account').value = '';
+  toggleBillAmountField('bill-amount', 'bill-link-account');
   renderBills();
   renderDashboard();
 }
