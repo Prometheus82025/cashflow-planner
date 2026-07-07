@@ -354,6 +354,14 @@
         <div id="bill-day-wrap"><label>Due Day of Month</label><input id="bill-day" type="number" placeholder="1–31" min="1" max="31" /></div>
         <div id="bill-date-wrap" style="display:none"><label>Next Due Date</label><input id="bill-next-date" type="date" /></div>
       </div>
+      <div class="form-row" style="margin-top:4px">
+        <div>
+          <label>Link to Credit Account <span style="color:var(--muted);font-weight:400;font-size:11px">(optional — bill amount will mirror the account balance)</span></label>
+          <select id="bill-link-account" onchange="toggleBillAmountField('bill-amount','bill-link-account')">
+            <option value="">None</option>
+          </select>
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="addBill()">+ Add Bill</button>
     </div>
 
