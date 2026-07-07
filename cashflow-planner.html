@@ -1864,13 +1864,24 @@ function renderIncome() {
     tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-icon">💰</div>No income sources yet.</div></td></tr>';
     return;
   }
-  tbody.innerHTML = state.income.map(i => `<tr>
-    <td><strong>${esc(i.name)}</strong></td>
-    <td>${i.frequency}</td>
-    <td style="color:var(--green);font-weight:600">${fmt(i.amount)}</td>
-    <td>${i.nextDate}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="deleteIncome(${i.id})">Remove</button></td>
-  </tr>`).join('');
+  const today = new Date(); today.setHours(0,0,0,0);
+  tbody.innerHTML = state.income.map(i => {
+    const nextD = parseLocalDateStr(i.nextDate);
+    const isDue = nextD <= today;
+    const badge = isDue
+      ? `<span class="badge badge-red" style="margin-left:6px">Due</span>`
+      : `<span class="badge" style="margin-left:6px;background:rgba(99,102,241,.2);color:#a5b4fc">Upcoming</span>`;
+    return `<tr>
+      <td><strong>${esc(i.name)}</strong>${badge}</td>
+      <td>${i.frequency}</td>
+      <td style="color:var(--green);font-weight:600">${fmt(i.amount)}</td>
+      <td>${i.nextDate}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="markIncomeReceived(${i.id})">✓ Mark Received</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteIncome(${i.id})">Remove</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function switchBillsTab(tab) {
