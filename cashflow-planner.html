@@ -1386,6 +1386,39 @@ function isBillPaid(b) {
   if (!b.paidUntil) return false;
   return parseLocalDateStr(b.paidUntil) >= nextDueDateForBill(b);
 }
+
+// Returns live account balance for linked credit-card bills, otherwise stored amount
+function getBillEffectiveAmount(b) {
+  if (b.linkedAccountId) {
+    const acct = state.accounts.find(a => String(a.id) === String(b.linkedAccountId));
+    if (acct) return Math.abs(acct.balance || 0);
+  }
+  return b.amount || 0;
+}
+
+// Populates "Link to Account" dropdowns with credit-type accounts only
+function populateLinkAccountDropdowns(addSel, editSel) {
+  const creditAccts = state.accounts.filter(a => a.type === 'credit');
+  const makeOpts = (sel) =>
+    '<option value="">None</option>' +
+    creditAccts.map(a => `<option value="${a.id}"${String(a.id) === String(sel) ? ' selected' : ''}>${esc(a.name)} (${fmt(a.balance)})</option>`).join('');
+  const addEl = document.getElementById('bill-link-account');
+  const editEl = document.getElementById('edit-bill-link-account');
+  if (addEl) addEl.innerHTML = makeOpts(addSel || '');
+  if (editEl) editEl.innerHTML = makeOpts(editSel || '');
+}
+
+// Greys out the manual amount field when a credit account is linked
+function toggleBillAmountField(amtElId, linkElId) {
+  const amtEl = document.getElementById(amtElId);
+  const linkEl = document.getElementById(linkElId);
+  if (!amtEl || !linkEl) return;
+  const linked = !!linkEl.value;
+  amtEl.disabled = linked;
+  amtEl.style.opacity = linked ? '0.4' : '1';
+  if (linked) amtEl.placeholder = 'Auto — uses account balance';
+}
+
 let markPaidBillId = null;
 
 function markBillPaid(id) {
