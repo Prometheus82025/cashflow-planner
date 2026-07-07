@@ -1659,7 +1659,7 @@ function renderBills() {
     const f = b.frequency;
     if (f === 'once') return s;
     const mult = f === 'weekly' ? 4.33 : f === 'biweekly' ? 2.17 : 1;
-    return s + b.amount * mult;
+    return s + getBillEffectiveAmount(b) * mult;
   }, 0);
   totalLabel.textContent = `~${fmt(monthlyEq)}/mo`;
   const monthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
