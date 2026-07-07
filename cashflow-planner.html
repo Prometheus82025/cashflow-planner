@@ -1429,7 +1429,7 @@ function markBillPaid(id) {
   const b = state.bills.find(x => x.id === id);
   if (!b) return;
   markPaidBillId = id;
-  document.getElementById('mark-paid-bill-name').textContent = `${b.name} — ${fmt(b.amount)}`;
+  document.getElementById('mark-paid-bill-name').textContent = `${b.name} — ${fmt(getBillEffectiveAmount(b))}`;
   const list = document.getElementById('mark-paid-account-list');
   if (!state.accounts.length) {
     list.innerHTML = `<p style="color:var(--muted);font-size:13px">No accounts set up. Use "Already paid" below to just mark it off.</p>`;
