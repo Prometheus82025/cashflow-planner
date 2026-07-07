@@ -1812,14 +1812,17 @@ function saveEditBill() {
   const b = state.bills.find(x => x.id === editingBillId);
   if (!b) return;
   const name = document.getElementById('edit-bill-name').value.trim();
-  const amount = parseFloat(document.getElementById('edit-bill-amount').value);
+  const linkedAccountId = document.getElementById('edit-bill-link-account').value || null;
+  const amount = linkedAccountId ? (b.amount || 0) : parseFloat(document.getElementById('edit-bill-amount').value);
   const frequency = document.getElementById('edit-bill-frequency').value;
   const category = document.getElementById('edit-bill-category').value;
-  if (!name || !amount) return alert('Fill in name and amount.');
+  if (!name) return alert('Fill in a bill name.');
+  if (!linkedAccountId && !amount) return alert('Enter an amount, or link a credit account.');
   b.name = name;
   b.amount = amount;
   b.frequency = frequency;
   b.category = category;
+  b.linkedAccountId = linkedAccountId;
   if (frequency === 'monthly') {
     const day = parseInt(document.getElementById('edit-bill-day').value);
     if (!day || day < 1 || day > 31) return alert('Enter a valid due day (1-31).');
