@@ -1637,6 +1637,7 @@ function freqLabel(b) {
 }
 
 function renderBills() {
+  populateLinkAccountDropdowns(); // keep credit account options fresh
   const tbody = document.getElementById('bills-table-body');
   const totalLabel = document.getElementById('bills-total-label');
   if (!state.bills.length) {
