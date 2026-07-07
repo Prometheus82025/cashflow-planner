@@ -1506,7 +1506,7 @@ function markBillUnpaid(id) {
 }
 
 // ─── BILL CATEGORY DROPDOWN SYNC ─────────────────────────────────────────────
-const BILL_CATEGORY_FALLBACK = ['Housing','Utilities','Subscriptions','Insurance','Loans','Transportation','Food','Groceries','Health','Personal Care','Pets','Baby','Shopping','Entertainment','Other'];
+const BILL_CATEGORY_FALLBACK = ['Housing','Utilities','Subscriptions','Insurance','Loans','Transportation','Food','Groceries','Health','Personal Care','Pets','Baby','Shopping','Entertainment','Credit Cards','Other'];
 
 function populateBillCategoryDropdowns(selectedAdd, selectedEdit) {
   const budgetCats = Object.keys(state.budgets || {});
