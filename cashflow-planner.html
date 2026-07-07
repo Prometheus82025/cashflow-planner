@@ -1833,17 +1833,9 @@ function confirmIncomeReceivedWithAcct(acctIdx) {
 }
 
 function confirmIncomeReceivedSkip() {
+  // Already updated manually — just advance the date, no transaction created
   const inc = state.income.find(i => i.id === markReceivedIncomeId);
   if (!inc) return;
-  state.transactions.push({
-    id: Date.now(),
-    date: todayStr(),
-    description: inc.name + ' (paycheck)',
-    amount: Math.abs(inc.amount),
-    category: 'Income',
-    account: '',
-    reviewed: true
-  });
   _finalizeIncomeReceived(inc);
 }
 
