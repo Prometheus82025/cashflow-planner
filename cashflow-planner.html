@@ -1046,6 +1046,10 @@ function load() {
         settings: Object.assign({ buffer: 200, lastImported: null }, parsed.settings || {}),
         activity: parsed.activity || []
       };
+      // Auto-seed "Credit Cards" budget category if not present
+      if (!('Credit Cards' in state.budgets)) {
+        state.budgets['Credit Cards'] = 0;
+      }
       localStorage.setItem('cashflow_v2', JSON.stringify(state));
     } catch(e) { console.error('Failed to load saved data:', e); }
   }
