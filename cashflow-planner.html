@@ -1784,6 +1784,8 @@ function openEditBillModal(id) {
   const freq = b.frequency || 'monthly';
   document.getElementById('edit-bill-frequency').value = freq;
   populateBillCategoryDropdowns(undefined, b.category || 'Other');
+  populateLinkAccountDropdowns(null, b.linkedAccountId || '');
+  toggleBillAmountField('edit-bill-amount', 'edit-bill-link-account');
   const isMonthly = freq === 'monthly';
   document.getElementById('edit-bill-day-wrap').style.display = isMonthly ? '' : 'none';
   document.getElementById('edit-bill-date-wrap').style.display = isMonthly ? 'none' : '';
