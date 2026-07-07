@@ -2947,7 +2947,7 @@ function renderDashboard() {
 
   const bills7Total = upcomingAll
     .filter(b => !b.paid && b.nextDate <= in7)
-    .reduce((s, b) => s + b.amount, 0);
+    .reduce((s, b) => s + getBillEffectiveAmount(b), 0);
 
   // Need This Week card
   document.getElementById('dash-need-week').textContent = fmt(bills7Total);
