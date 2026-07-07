@@ -929,6 +929,14 @@
       <div id="edit-bill-day-wrap"><label>Due Day of Month</label><input id="edit-bill-day" type="number" min="1" max="31" placeholder="1-31" /></div>
       <div id="edit-bill-date-wrap" style="display:none"><label>Next Due Date</label><input id="edit-bill-next-date" type="date" /></div>
     </div>
+    <div class="form-row" style="margin-top:4px">
+      <div>
+        <label>Link to Credit Account <span style="color:var(--muted);font-weight:400;font-size:11px">(amount mirrors account balance)</span></label>
+        <select id="edit-bill-link-account" onchange="toggleBillAmountField('edit-bill-amount','edit-bill-link-account')">
+          <option value="">None</option>
+        </select>
+      </div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeEditBillModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveEditBill()">Save Changes</button>
