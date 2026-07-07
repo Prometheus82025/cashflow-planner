@@ -1788,6 +1788,76 @@ function deleteIncome(id) {
   state.income = state.income.filter(x => x.id !== id);
   save(); renderIncome(); renderDashboard();
 }
+
+let markReceivedIncomeId = null;
+
+function markIncomeReceived(id) {
+  const inc = state.income.find(i => i.id === id);
+  if (!inc) return;
+  markReceivedIncomeId = id;
+  document.getElementById('mark-received-income-name').textContent = `${inc.name} — ${fmt(inc.amount)}`;
+  const list = document.getElementById('mark-received-account-list');
+  if (!state.accounts.length) {
+    list.innerHTML = `<p style="color:var(--muted);font-size:13px">No accounts set up. Use "Already received" below to just mark it.</p>`;
+  } else {
+    list.innerHTML = state.accounts.map((a, i) => `
+      <button class="btn btn-ghost" style="justify-content:space-between;text-align:left;padding:10px 14px"
+        onclick="confirmIncomeReceivedWithAcct(${i})">
+        <span>${esc(a.name)}</span>
+        <span style="color:var(--muted);font-size:13px">${fmt(a.balance)}</span>
+      </button>`).join('');
+  }
+  document.getElementById('mark-received-modal').classList.add('open');
+}
+
+function closeMarkReceivedModal() {
+  document.getElementById('mark-received-modal').classList.remove('open');
+  markReceivedIncomeId = null;
+}
+
+function confirmIncomeReceivedWithAcct(acctIdx) {
+  const inc = state.income.find(i => i.id === markReceivedIncomeId);
+  const acct = state.accounts[acctIdx];
+  if (!inc || !acct) return;
+  acct.balance = Math.round(((acct.balance || 0) + inc.amount) * 100) / 100;
+  state.transactions.push({
+    id: Date.now(),
+    date: todayStr(),
+    description: inc.name + ' (paycheck)',
+    amount: Math.abs(inc.amount),
+    category: 'Income',
+    account: acct.name,
+    reviewed: true
+  });
+  _finalizeIncomeReceived(inc);
+}
+
+function confirmIncomeReceivedSkip() {
+  const inc = state.income.find(i => i.id === markReceivedIncomeId);
+  if (!inc) return;
+  state.transactions.push({
+    id: Date.now(),
+    date: todayStr(),
+    description: inc.name + ' (paycheck)',
+    amount: Math.abs(inc.amount),
+    category: 'Income',
+    account: '',
+    reviewed: true
+  });
+  _finalizeIncomeReceived(inc);
+}
+
+function _finalizeIncomeReceived(inc) {
+  const step = inc.frequency === 'weekly' ? 7
+             : inc.frequency === 'biweekly' ? 14
+             : inc.frequency === 'semimonthly' ? 15 : 30;
+  let d = parseLocalDateStr(inc.nextDate);
+  d.setDate(d.getDate() + step);
+  inc.nextDate = dateToStr(d);
+  closeMarkReceivedModal();
+  save(); renderIncome(); renderAccounts(); renderDashboard(); renderTransactions();
+}
+
 function renderIncome() {
   const tbody = document.getElementById('income-table-body');
   if (!state.income.length) {
