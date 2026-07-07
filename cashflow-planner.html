@@ -2810,9 +2810,9 @@ function renderDashboard() {
       : 'set budgets to calculate';
   }
 
-  // Safe to Spend = balance − bills this week − weekly budget − buffer
+  // Safe to Spend = balance − bills this week − buffer
   const buffer = state.settings.buffer || 200;
-  const safeSpendRaw = totalBalance - bills7Total - weeklyBudgetTotal - buffer;
+  const safeSpendRaw = totalBalance - bills7Total - buffer;
   const safeEl = document.getElementById('dash-safe-spend');
   const safeSpendDisplay = Math.max(0, safeSpendRaw);
   safeEl.textContent = fmt(safeSpendDisplay);
