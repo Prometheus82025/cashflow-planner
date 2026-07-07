@@ -2923,18 +2923,25 @@ function renderDashboard() {
     warnEl.innerHTML = '';
   }
 
-  // Spent this month
+  // Spent this month — exclude credit account transactions (those aren't cash out of pocket)
   const thisMonth = now.getMonth(), thisYear = now.getFullYear();
+  const creditAccountNames = new Set(
+    state.accounts.filter(a => a.type === 'credit').map(a => a.name)
+  );
   const monthTx = state.transactions.filter(t => {
     const d = parseLocalDateStr(t.date);
-    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear
+      && t.reviewed !== false; // exclude unreviewed inbox items
   });
-  const spentMonth = monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer' && !t.isSplitParent).reduce((s,t) => s + Math.abs(t.amount), 0);
+  const spentMonth = monthTx.filter(t =>
+    t.amount < 0 && t.category !== 'Transfer' && !t.isSplitParent
+    && !creditAccountNames.has(t.account)
+  ).reduce((s,t) => s + Math.abs(t.amount), 0);
   const incomeMonth = monthTx.filter(t => t.amount > 0 && t.category !== 'Transfer').reduce((s,t) => s + t.amount, 0);
-  const totalMonthlyBills = state.bills.reduce((s,b) => s + b.amount, 0);
+  const totalMonthlyBudget = Object.values(state.budgets || {}).reduce((s,v) => s + (parseFloat(v)||0), 0) || 1;
   const spentEl = document.getElementById('dash-spent');
   spentEl.textContent = fmt(spentMonth);
-  spentEl.className = 'stat-value ' + (spentMonth > totalMonthlyBills ? 'red' : spentMonth >= totalMonthlyBills * 0.8 ? 'yellow' : 'green');
+  spentEl.className = 'stat-value ' + (spentMonth > totalMonthlyBudget ? 'red' : spentMonth >= totalMonthlyBudget * 0.75 ? 'yellow' : 'green');
   document.getElementById('dash-income-month').textContent = `${fmt(incomeMonth)} income logged`;
 
   // Upcoming bills list
