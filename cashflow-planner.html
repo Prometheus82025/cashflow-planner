@@ -2937,7 +2937,7 @@ function renderDashboard() {
   }).filter(b => b.nextDate <= in14).sort((a,b) => a.nextDate - b.nextDate);
   const upcoming = upcomingAll.filter(b => !b.paid);
 
-  const bills14Total = upcoming.reduce((s,b) => s+b.amount, 0);
+  const bills14Total = upcoming.reduce((s,b) => s+getBillEffectiveAmount(b), 0);
   document.getElementById('dash-bills-due').textContent = fmt(bills14Total);
   document.getElementById('dash-bills-count').textContent = `${upcoming.length} bill${upcoming.length===1?'':'s'} in next 14 days`;
 
