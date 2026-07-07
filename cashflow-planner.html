@@ -3546,10 +3546,6 @@ function renderBudgets() {
   const excluded = state.settings.budgetWeekExclude || [];
   el.innerHTML = sortedBudgets.map(([cat, limit]) => {
     const spent = spendByCat[cat] || 0;
-    const pct = Math.min((spent / limit) * 100, 100);
-    const over = spent > limit;
-    const warn = spent / limit >= 0.75;
-    const fillColor = over ? 'var(--red)' : warn ? 'var(--yellow)' : 'var(--green)';
     const safecat = cat.replace(/'/g, "\\'");
     const key = cat.replace(/\s/g, '_');
     const isExcluded = excluded.includes(cat);
@@ -3563,6 +3559,26 @@ function renderBudgets() {
     const actionButtons = `${weeklyToggle}
          <button class="btn btn-ghost btn-sm" onclick="startBudgetInlineEdit('${safecat}')">Edit</button>
          <button class="btn btn-danger btn-sm" onclick="deleteBudget('${safecat}')">Remove</button>`;
+
+    // No limit set yet — show a placeholder state instead of broken 0/0 math
+    if (!limit) {
+      return `<div class="card section-gap" style="opacity:0.75">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div>${catBadge(cat)} <strong style="margin-left:6px">${cat}</strong></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${amountDisplay}
+            ${actionButtons}
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:0%;background:var(--muted)"></div></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">No limit set — click Edit to set your monthly budget</div>
+      </div>`;
+    }
+
+    const pct = Math.min((spent / limit) * 100, 100);
+    const over = spent > limit;
+    const warn = spent / limit >= 0.75;
+    const fillColor = over ? 'var(--red)' : warn ? 'var(--yellow)' : 'var(--green)';
     return `<div class="card section-gap">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div>${catBadge(cat)} <strong style="margin-left:6px">${cat}</strong></div>
