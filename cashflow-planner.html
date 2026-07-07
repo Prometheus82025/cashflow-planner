@@ -1453,14 +1453,21 @@ function confirmBillPaidWithAcct(acctIdx) {
   const b = state.bills.find(x => x.id === markPaidBillId);
   const acct = state.accounts[acctIdx];
   if (!b || !acct) return;
-  acct.balance = (acct.balance || 0) - b.amount;
+  const payAmt = getBillEffectiveAmount(b);
+  acct.balance = Math.round(((acct.balance || 0) - payAmt) * 100) / 100;
+  // If linked to a credit account, reset its balance to $0 (card is now paid off)
+  if (b.linkedAccountId) {
+    const creditAcct = state.accounts.find(a => String(a.id) === String(b.linkedAccountId));
+    if (creditAcct) creditAcct.balance = 0;
+  }
   state.transactions.push({
     id: Date.now(),
     date: todayStr(),
     description: `${b.name} (bill payment)`,
-    amount: -b.amount,
+    amount: -payAmt,
     category: b.category || 'Bills',
-    account: acct.name
+    account: acct.name,
+    reviewed: true
   });
   _finalizeBillPaid(b);
 }
