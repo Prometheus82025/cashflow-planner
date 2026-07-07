@@ -1475,12 +1475,17 @@ function confirmBillPaidWithAcct(acctIdx) {
 function confirmBillPaidSkip() {
   const b = state.bills.find(x => x.id === markPaidBillId);
   if (!b) return;
-  // Still create a transaction so budgets track the spending (no account deduction)
+  const payAmt = getBillEffectiveAmount(b);
+  // If linked, reset the credit account balance to $0
+  if (b.linkedAccountId) {
+    const creditAcct = state.accounts.find(a => String(a.id) === String(b.linkedAccountId));
+    if (creditAcct) creditAcct.balance = 0;
+  }
   state.transactions.push({
     id: Date.now(),
     date: todayStr(),
     description: `${b.name} (bill payment)`,
-    amount: -Math.abs(b.amount),
+    amount: -Math.abs(payAmt),
     category: b.category || 'Bills',
     account: ''
   });
