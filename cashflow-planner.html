@@ -2125,20 +2125,6 @@ Return ONLY the JSON array.`;
   }
 }
 
-function processCSVFile(file) {
-  if (!document.getElementById('import-account').value) {
-    return alert('Select an account before importing.');
-  }
-  Papa.parse(file, {
-    header: true, skipEmptyLines: true,
-    complete: (results) => {
-      const rows = results.data;
-      if (!rows.length) return alert('No data found in CSV.');
-      pendingImport = parseTransactions(rows);
-      showImportPreview();
-    }
-  });
-}
 
 function detectColumns(row) {
   const keys = Object.keys(row).map(k => k.trim().toLowerCase());
