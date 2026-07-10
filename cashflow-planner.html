@@ -499,7 +499,7 @@
       <p><strong>Click to upload</strong> or drag & drop</p>
       <p style="margin-top:6px;font-size:12px">CSV · PDF · Image (JPG, PNG) — PDFs and images use AI to extract transactions.</p>
     </div>
-    <input type="file" id="csv-file-input" accept=".csv,.pdf,image/*" onchange="handleCSVUpload(event)" />
+    <input type="file" id="csv-file-input" accept=".csv,.pdf,image/*" multiple onchange="handleCSVUpload(event)" />
     <div id="ai-import-status" style="display:none;margin-top:10px;font-size:13px;color:var(--muted);text-align:center"></div>
   </div>
 
