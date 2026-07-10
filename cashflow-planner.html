@@ -2029,9 +2029,16 @@ function processMultipleCSVFiles(files) {
         if (rows.length) combined = combined.concat(parseTransactions(rows));
         completed++;
         if (completed === files.length) {
-          pendingImport = combined;
+          // Accumulate — don't wipe previous uploads
+          pendingImport = [...pendingImport, ...combined];
+          const queueNote = pendingImport.length > combined.length ? ` (${pendingImport.length} total queued)` : '';
           if (files.length > 1) {
-            statusEl.textContent = `✅ Loaded ${files.length} files — ${pendingImport.length} transactions ready to review.`;
+            statusEl.style.display = '';
+            statusEl.textContent = `✅ Loaded ${files.length} files — ${combined.length} transactions added${queueNote}. Upload more or confirm below.`;
+            statusEl.style.color = 'var(--green)';
+          } else if (pendingImport.length > combined.length) {
+            statusEl.style.display = '';
+            statusEl.textContent = `✅ Added ${combined.length} more transactions — ${pendingImport.length} total queued.`;
             statusEl.style.color = 'var(--green)';
           } else {
             statusEl.style.display = 'none';
