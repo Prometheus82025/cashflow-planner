@@ -2332,7 +2332,14 @@ function confirmImport() {
   renderTransactions();
   renderDashboard();
   showBillMatchModal(newTx);
-  alert(`✅ Imported ${newTx.length} transactions (${skipped} skipped).`);
+
+  // After import: prompt to sync account balance (imported txs are already in bank balance)
+  const importAcctId = document.getElementById('import-account').value;
+  const importAcct = state.accounts.find(a => String(a.id) === importAcctId);
+  const acctName = importAcct ? importAcct.name : 'your account';
+  const netAmt = newTx.reduce((s,t) => s + (Number(t.amount)||0), 0);
+  const netFmt = (netAmt < 0 ? '-' : '+') + fmt(Math.abs(netAmt));
+  alert(`✅ Imported ${newTx.length} transactions (${skipped} skipped).\n\n💡 These transactions are already reflected in your bank balance. Open the Accounts tab and update ${acctName} to match what your bank app shows.`);
 }
 
 function clearImportPreview() {
