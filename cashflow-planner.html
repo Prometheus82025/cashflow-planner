@@ -2043,86 +2043,97 @@ function processMultipleCSVFiles(files) {
   });
 }
 
-async function processStatementWithAI(file) {
+// Extracts transactions from a single image/PDF via OpenAI — returns raw item array
+async function extractTransactionsFromImage(file) {
+  const reader = new FileReader();
+  const dataUrl = await new Promise((res, rej) => {
+    reader.onload = ev => res(ev.target.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+  const base64 = dataUrl.split(',')[1];
+  const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+  const today = todayStr();
+
+  const prompt = `Extract EVERY transaction visible in this image. This is a mobile banking app screenshot or bank statement. Return ONLY a raw JSON array — no markdown, no code fences, no explanation.
+
+Each object: {"date":"YYYY-MM-DD","description":"merchant or payee name","amount":number}
+- amount NEGATIVE for debits/charges/payments (money leaving)
+- amount POSITIVE for credits/deposits (money coming in)
+
+LAYOUT RULES for mobile banking screenshots (e.g. Chase, Bank of America, Wells Fargo):
+- Transactions are listed as rows. Each row has: MERCHANT NAME on the left, TRANSACTION AMOUNT on the far right (red = debit, blue/green = credit).
+- Directly below the merchant name on the LEFT, you may see a dollar amount like "$2,834.91" or "$4,098.19" — this is the RUNNING ACCOUNT BALANCE after that transaction. IGNORE IT. It is NOT the transaction amount.
+- The TRANSACTION AMOUNT is always the number on the RIGHT edge of the row (e.g. -$574.00, -$381.58, +$6,367.60).
+- Date headers like "Jul 9, 2026" or "Jul 8, 2026" are section dividers — they are NOT transactions. Use that date for all rows below it until the next date header.
+- A "Pending" section at the top has no dates — use "${today}" for those.
+- Include ALL rows: pending and posted. Do not skip any row, even small amounts.
+
+Return ONLY the JSON array.`;
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } }
+      ]}]
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  let raw = data.choices[0].message.content.trim();
+  raw = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
+  const arrMatch = raw.startsWith('[') ? raw : raw.match(/\[[\s\S]*\]/)?.[0];
+  if (!arrMatch) throw new Error('Could not parse AI response for ' + file.name);
+  const items = JSON.parse(arrMatch);
+  return items.filter(t => t.description && Number(t.amount) !== 0);
+}
+
+// Processes one or more image/PDF files sequentially and combines into one pendingImport
+async function processMultipleAIFiles(files) {
   if (!openAIKey) {
     alert('Add your OpenAI API key in Settings to import PDFs and images.');
     return;
   }
+  const accountId = document.getElementById('import-account').value;
+  if (!accountId) return alert('Select an account before importing.');
+
   const statusEl = document.getElementById('ai-import-status');
   statusEl.style.display = '';
   statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = '🤖 Reading statement with AI…';
 
-  try {
-    const reader = new FileReader();
-    const dataUrl = await new Promise((res, rej) => {
-      reader.onload = ev => res(ev.target.result);
-      reader.onerror = rej;
-      reader.readAsDataURL(file);
-    });
-    const base64 = dataUrl.split(',')[1];
-    const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-    const isPdf = mimeType === 'application/pdf';
-
-    const accountName = document.getElementById('import-account').options[document.getElementById('import-account').selectedIndex]?.text || '';
-    const today = todayStr();
-    const prompt = `Extract every transaction from this image. It may be a mobile banking app screenshot, bank statement, or store receipt. Return ONLY a raw JSON array — no markdown, no code fences, no explanation.
-
-Each object: {"date":"YYYY-MM-DD","description":"full text","amount":number}
-- amount is NEGATIVE for debits/purchases/charges (money leaving the account)
-- amount is POSITIVE for credits/deposits (money coming in)
-
-CRITICAL RULES:
-1. Include EVERY transaction row — both PENDING and POSTED. Do not skip any.
-2. Pending transactions often appear under a "Pending" header with no date — use "${today}" as their date.
-3. In mobile banking apps, some transactions show a running account balance (like $891.49 or $1,066.48) on the LEFT below the merchant name. That is the ACCOUNT BALANCE — ignore it. The TRANSACTION AMOUNT is the red or green number on the RIGHT side of the row (like -$174.99).
-4. For store receipts: one transaction, store name as description, total as negative amount.
-5. Do not group, summarize, or skip any visible row.
-
-Return ONLY the JSON array.`;
-
-    const imageContent = isPdf
-      ? { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } }
-      : { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } };
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, imageContent] }]
-      })
-    });
-
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    let raw = data.choices[0].message.content.trim();
-    // Strip markdown code blocks if present
-    raw = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
-    const arrMatch = raw.startsWith('[') ? raw : raw.match(/\[[\s\S]*\]/)?.[0];
-    if (!arrMatch) throw new Error('Could not parse AI response.');
-    const items = JSON.parse(arrMatch);
-    if (!items.length) throw new Error('No transactions found in statement.');
-
-    const accountId = document.getElementById('import-account').value;
-    if (!accountId) throw new Error('Select an account before importing.');
-    pendingImport = items.map((item, i) => ({
-      id: Date.now() + i,
-      date: item.date || todayStr(),
-      description: item.description || 'Unknown',
-      amount: Number(item.amount) || 0,
-      category: Number(item.amount) > 0 ? 'Income' : 'Other',
-      account: accountId
-    })).filter(t => t.description && t.amount !== 0);
-
-    statusEl.textContent = `✅ Found ${pendingImport.length} transactions. Review and confirm below.`;
-    statusEl.style.color = 'var(--green)';
-    showImportPreview();
-  } catch(err) {
-    statusEl.textContent = '❌ Error: ' + err.message;
-    statusEl.style.color = 'var(--red)';
+  let combined = [];
+  for (let i = 0; i < files.length; i++) {
+    statusEl.textContent = `🤖 Reading screenshot ${i + 1} of ${files.length}…`;
+    try {
+      const items = await extractTransactionsFromImage(files[i]);
+      combined = combined.concat(items);
+    } catch(err) {
+      statusEl.textContent = `❌ Error on file ${i + 1}: ${err.message}`;
+      statusEl.style.color = 'var(--red)';
+      return;
+    }
   }
+
+  let idBase = Date.now();
+  pendingImport = combined.map((item, i) => ({
+    id: idBase + i,
+    date: item.date || todayStr(),
+    description: item.description || 'Unknown',
+    amount: Number(item.amount) || 0,
+    category: Number(item.amount) > 0 ? 'Income' : 'Other',
+    account: accountId
+  }));
+
+  const label = files.length > 1 ? `${files.length} screenshots` : `1 screenshot`;
+  statusEl.textContent = `✅ Found ${pendingImport.length} transactions from ${label}. Review and confirm below.`;
+  statusEl.style.color = 'var(--green)';
+  showImportPreview();
 }
 
 
