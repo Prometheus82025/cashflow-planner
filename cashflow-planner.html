@@ -3419,6 +3419,12 @@ function renderBudgetChart() {
   monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer' && !t.isSplitParent).forEach(t => {
     spendByCat[t.category] = (spendByCat[t.category] || 0) + Math.abs(t.amount);
   });
+  // Credit Cards: use sum of all credit account balances instead of tagged transactions
+  if ('Credit Cards' in state.budgets) {
+    spendByCat['Credit Cards'] = state.accounts
+      .filter(a => a.type === 'credit')
+      .reduce((s, a) => s + Math.abs(a.balance || 0), 0);
+  }
 
   const totalBudget = cats.reduce((s, c) => s + (state.budgets[c] || 0), 0);
   const totalSpent = cats.reduce((s, c) => s + (spendByCat[c] || 0), 0);
