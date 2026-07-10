@@ -2121,7 +2121,7 @@ async function processMultipleAIFiles(files) {
   }
 
   let idBase = Date.now();
-  pendingImport = combined.map((item, i) => ({
+  const newItems = combined.map((item, i) => ({
     id: idBase + i,
     date: item.date || todayStr(),
     description: item.description || 'Unknown',
@@ -2129,9 +2129,12 @@ async function processMultipleAIFiles(files) {
     category: Number(item.amount) > 0 ? 'Income' : 'Other',
     account: accountId
   }));
+  // Accumulate — don't wipe previous screenshots if already queued
+  pendingImport = [...pendingImport, ...newItems];
 
   const label = files.length > 1 ? `${files.length} screenshots` : `1 screenshot`;
-  statusEl.textContent = `✅ Found ${pendingImport.length} transactions from ${label}. Review and confirm below.`;
+  const queueNote = pendingImport.length > newItems.length ? ` (${pendingImport.length} total queued)` : '';
+  statusEl.textContent = `✅ Found ${newItems.length} transactions from ${label}${queueNote}. Upload more or confirm below.`;
   statusEl.style.color = 'var(--green)';
   showImportPreview();
 }
