@@ -3128,7 +3128,7 @@ function renderDashboard() {
           <div class="bill-date">${b.nextDate.toLocaleDateString()} · ${catBadge(b.category)}</div>
         </div>
         <div style="text-align:right">
-          <div class="bill-amount red">${fmt(b.amount)}</div>
+          <div class="bill-amount red">${fmt(getBillEffectiveAmount(b))}</div>
           <span class="badge ${urgency}">${urgencyText}</span>
         </div>
       </div>`;
