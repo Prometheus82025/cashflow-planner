@@ -1708,7 +1708,7 @@ function renderBills() {
     if (billSortCol === 'name')      { av = a.name.toLowerCase(); bv = b.name.toLowerCase(); }
     else if (billSortCol === 'category') { av = (a.category||'').toLowerCase(); bv = (b.category||'').toLowerCase(); }
     else if (billSortCol === 'frequency') { av = (a.frequency||'monthly'); bv = (b.frequency||'monthly'); }
-    else if (billSortCol === 'amount') { av = a.amount; bv = b.amount; }
+    else if (billSortCol === 'amount') { av = getBillEffectiveAmount(a); bv = getBillEffectiveAmount(b); }
     else { av = nextDueDateForBill(a); bv = nextDueDateForBill(b); }
     if (av < bv) return -1 * billSortDir;
     if (av > bv) return 1 * billSortDir;
