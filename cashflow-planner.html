@@ -2051,58 +2051,17 @@ function processMultipleCSVFiles(files) {
   });
 }
 
-// Extracts transactions from a single image/PDF via OpenAI — returns raw item array
-async function extractTransactionsFromImage(file) {
-  const reader = new FileReader();
-  const dataUrl = await new Promise((res, rej) => {
+// Converts a File to a base64 data URL
+async function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
     reader.onload = ev => res(ev.target.result);
     reader.onerror = rej;
     reader.readAsDataURL(file);
   });
-  const base64 = dataUrl.split(',')[1];
-  const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-  const today = todayStr();
-
-  const prompt = `Extract EVERY transaction visible in this image. This is a mobile banking app screenshot or bank statement. Return ONLY a raw JSON array — no markdown, no code fences, no explanation.
-
-Each object: {"date":"YYYY-MM-DD","description":"merchant or payee name","amount":number}
-- amount NEGATIVE for debits/charges/payments (money leaving)
-- amount POSITIVE for credits/deposits (money coming in)
-
-LAYOUT RULES for mobile banking screenshots (e.g. Chase, Bank of America, Wells Fargo):
-- Transactions are listed as rows. Each row has: MERCHANT NAME on the left, TRANSACTION AMOUNT on the far right (red = debit, blue/green = credit).
-- Directly below the merchant name on the LEFT, you may see a dollar amount like "$2,834.91" or "$4,098.19" — this is the RUNNING ACCOUNT BALANCE after that transaction. IGNORE IT. It is NOT the transaction amount.
-- The TRANSACTION AMOUNT is always the number on the RIGHT edge of the row (e.g. -$574.00, -$381.58, +$6,367.60).
-- Date headers like "Jul 9, 2026" or "Jul 8, 2026" are section dividers — they are NOT transactions. Use that date for all rows below it until the next date header.
-- A "Pending" section at the top has no dates — use "${today}" for those.
-- Include ALL rows: pending and posted. Do not skip any row, even small amounts.
-
-Return ONLY the JSON array.`;
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: [
-        { type: 'text', text: prompt },
-        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } }
-      ]}]
-    })
-  });
-
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  let raw = data.choices[0].message.content.trim();
-  raw = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
-  const arrMatch = raw.startsWith('[') ? raw : raw.match(/\[[\s\S]*\]/)?.[0];
-  if (!arrMatch) throw new Error('Could not parse AI response for ' + file.name);
-  const items = JSON.parse(arrMatch);
-  return items.filter(t => t.description && Number(t.amount) !== 0);
 }
 
-// Processes one or more image/PDF files sequentially and combines into one pendingImport
+// Processes one or more image/PDF files in a SINGLE API call — all images sent together
 async function processMultipleAIFiles(files) {
   if (!openAIKey) {
     alert('Add your OpenAI API key in Settings to import PDFs and images.');
@@ -2115,17 +2074,96 @@ async function processMultipleAIFiles(files) {
   statusEl.style.display = '';
   statusEl.style.color = 'var(--muted)';
 
+  // PDFs must be processed one at a time; images can all go in one API call
+  const imageFiles = files.filter(f => !f.name.endsWith('.pdf') && f.type !== 'application/pdf');
+  const pdfFiles = files.filter(f => f.name.endsWith('.pdf') || f.type === 'application/pdf');
+
   let combined = [];
-  for (let i = 0; i < files.length; i++) {
-    statusEl.textContent = `🤖 Reading screenshot ${i + 1} of ${files.length}…`;
+  const today = todayStr();
+  const prompt = `Extract EVERY transaction visible across ALL images provided. These are mobile banking app screenshots or bank statements. Return ONLY a raw JSON array — no markdown, no code fences, no explanation.
+
+Each object: {"date":"YYYY-MM-DD","description":"merchant or payee name","amount":number}
+- amount NEGATIVE for debits/charges/payments (money leaving)
+- amount POSITIVE for credits/deposits (money coming in)
+
+LAYOUT RULES for mobile banking screenshots (e.g. Chase, Bank of America, Wells Fargo):
+- Transactions are rows with MERCHANT NAME on the left and TRANSACTION AMOUNT on the far right (red = debit, blue/green = credit).
+- Below the merchant name on the LEFT you may see a dollar amount like "$2,834.91" — that is the RUNNING ACCOUNT BALANCE. IGNORE IT. It is NOT the transaction amount.
+- The TRANSACTION AMOUNT is always the number on the RIGHT edge (e.g. -$574.00, +$6,367.60).
+- Date headers like "Jul 9, 2026" are section dividers — NOT transactions. Use that date for all rows below until the next header.
+- "Pending" section rows have no date — use "${today}" for those.
+- Process every image provided. Include ALL rows from ALL images. Do not skip any, even small amounts.
+- If the same transaction appears in multiple screenshots, include it only once.
+
+Return ONE combined JSON array for all images.`;
+
+  // Process all images in a single API call
+  if (imageFiles.length) {
     try {
-      const items = await extractTransactionsFromImage(files[i]);
-      combined = combined.concat(items);
+      statusEl.textContent = `🤖 Reading ${imageFiles.length} screenshot${imageFiles.length > 1 ? 's' : ''} in one pass…`;
+      const imageContents = await Promise.all(imageFiles.map(async f => {
+        const dataUrl = await fileToBase64(f);
+        const mimeType = f.type || 'image/jpeg';
+        return { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } };
+      }));
+
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }]
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      let raw = data.choices[0].message.content.trim();
+      raw = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
+      const arrMatch = raw.startsWith('[') ? raw : raw.match(/\[[\s\S]*\]/)?.[0];
+      if (!arrMatch) throw new Error('Could not parse AI response.');
+      const items = JSON.parse(arrMatch);
+      combined = combined.concat(items.filter(t => t.description && Number(t.amount) !== 0));
     } catch(err) {
-      statusEl.textContent = `❌ Error on file ${i + 1}: ${err.message}`;
+      statusEl.textContent = '❌ Error reading screenshots: ' + err.message;
       statusEl.style.color = 'var(--red)';
-      return;
+      if (!pdfFiles.length) return;
     }
+  }
+
+  // PDFs processed individually (OpenAI handles them differently)
+  for (let i = 0; i < pdfFiles.length; i++) {
+    statusEl.textContent = `🤖 Reading PDF ${i + 1} of ${pdfFiles.length}…`;
+    try {
+      const dataUrl = await fileToBase64(pdfFiles[i]);
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openAIKey },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: prompt.replace('ALL images provided', 'this PDF').replace('across ALL images', 'in this PDF') },
+            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
+          ]}]
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      let raw = data.choices[0].message.content.trim();
+      raw = raw.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
+      const arrMatch = raw.startsWith('[') ? raw : raw.match(/\[[\s\S]*\]/)?.[0];
+      if (arrMatch) combined = combined.concat(JSON.parse(arrMatch).filter(t => t.description && Number(t.amount) !== 0));
+    } catch(err) {
+      console.error(`PDF ${i + 1} failed:`, err.message);
+    }
+  }
+
+  if (!combined.length) {
+    statusEl.textContent = '❌ No transactions found. Check that your OpenAI key is valid and the images are readable.';
+    statusEl.style.color = 'var(--red)';
+    return;
   }
 
   let idBase = Date.now();
@@ -2137,7 +2175,6 @@ async function processMultipleAIFiles(files) {
     category: Number(item.amount) > 0 ? 'Income' : 'Other',
     account: accountId
   }));
-  // Accumulate — don't wipe previous screenshots if already queued
   pendingImport = [...pendingImport, ...newItems];
 
   const label = files.length > 1 ? `${files.length} screenshots` : `1 screenshot`;
