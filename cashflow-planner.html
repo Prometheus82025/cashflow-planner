@@ -1991,19 +1991,56 @@ uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.cl
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
 uploadZone.addEventListener('drop', e => {
   e.preventDefault(); uploadZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) processCSVFile(file);
+  const files = Array.from(e.dataTransfer.files);
+  if (!files.length) return;
+  const csvFiles = files.filter(f => f.name.endsWith('.csv') || f.type === 'text/csv');
+  const otherFiles = files.filter(f => !f.name.endsWith('.csv') && f.type !== 'text/csv');
+  if (csvFiles.length) processMultipleCSVFiles(csvFiles);
+  if (otherFiles.length) processStatementWithAI(otherFiles[0]); // AI handles one at a time
 });
 
 function handleCSVUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
   e.target.value = '';
-  if (file.name.endsWith('.csv') || file.type === 'text/csv') {
-    processCSVFile(file);
-  } else {
-    processStatementWithAI(file);
+  const csvFiles = files.filter(f => f.name.endsWith('.csv') || f.type === 'text/csv');
+  const otherFiles = files.filter(f => !f.name.endsWith('.csv') && f.type !== 'text/csv');
+  if (csvFiles.length) processMultipleCSVFiles(csvFiles);
+  if (otherFiles.length) processStatementWithAI(otherFiles[0]);
+}
+
+function processMultipleCSVFiles(files) {
+  if (!document.getElementById('import-account').value) {
+    return alert('Select an account before importing.');
   }
+  const statusEl = document.getElementById('ai-import-status');
+  if (files.length > 1) {
+    statusEl.style.display = '';
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = `⏳ Parsing ${files.length} files…`;
+  }
+  let completed = 0;
+  let combined = [];
+  files.forEach(file => {
+    Papa.parse(file, {
+      header: true, skipEmptyLines: true,
+      complete: (results) => {
+        const rows = results.data;
+        if (rows.length) combined = combined.concat(parseTransactions(rows));
+        completed++;
+        if (completed === files.length) {
+          pendingImport = combined;
+          if (files.length > 1) {
+            statusEl.textContent = `✅ Loaded ${files.length} files — ${pendingImport.length} transactions ready to review.`;
+            statusEl.style.color = 'var(--green)';
+          } else {
+            statusEl.style.display = 'none';
+          }
+          showImportPreview();
+        }
+      }
+    });
+  });
 }
 
 async function processStatementWithAI(file) {
