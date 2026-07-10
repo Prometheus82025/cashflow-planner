@@ -548,8 +548,9 @@
     <div class="table-wrap">
       <div class="table-header">
         <h3>Preview — <span id="preview-count">0</span> transactions</h3>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost btn-sm" onclick="clearImportPreview()">Cancel</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" style="color:var(--muted)" onclick="clearImportPreview()">🗑 Clear &amp; start over</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('csv-file-input').click()">+ Add more</button>
           <button class="btn btn-primary btn-sm" onclick="confirmImport()">✅ Import All</button>
         </div>
       </div>
