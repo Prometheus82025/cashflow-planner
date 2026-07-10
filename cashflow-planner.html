@@ -1996,7 +1996,7 @@ uploadZone.addEventListener('drop', e => {
   const csvFiles = files.filter(f => f.name.endsWith('.csv') || f.type === 'text/csv');
   const otherFiles = files.filter(f => !f.name.endsWith('.csv') && f.type !== 'text/csv');
   if (csvFiles.length) processMultipleCSVFiles(csvFiles);
-  if (otherFiles.length) processStatementWithAI(otherFiles[0]); // AI handles one at a time
+  if (otherFiles.length) processMultipleAIFiles(otherFiles); // AI handles one at a time
 });
 
 function handleCSVUpload(e) {
@@ -2006,7 +2006,7 @@ function handleCSVUpload(e) {
   const csvFiles = files.filter(f => f.name.endsWith('.csv') || f.type === 'text/csv');
   const otherFiles = files.filter(f => !f.name.endsWith('.csv') && f.type !== 'text/csv');
   if (csvFiles.length) processMultipleCSVFiles(csvFiles);
-  if (otherFiles.length) processStatementWithAI(otherFiles[0]);
+  if (otherFiles.length) processMultipleAIFiles(otherFiles);
 }
 
 function processMultipleCSVFiles(files) {
