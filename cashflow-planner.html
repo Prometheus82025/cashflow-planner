@@ -159,18 +159,43 @@
     .stat-value { font-size: 22px; }
     .table-header { flex-wrap: wrap; gap: 10px; }
     .section-title { font-size: 18px; }
+    /* Allow tables to scroll horizontally instead of clipping */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* Modals get breathing room */
+    .modal-overlay { padding: 12px; }
+    .modal { padding: 20px; }
   }
-  @media (max-width: 500px) {
-    .grid-4, .grid-5, .grid-2 { grid-template-columns: 1fr; }
-    .form-row.cols-2 { grid-template-columns: 1fr; }
-    .page { padding: 12px 10px; }
-    .stat-value { font-size: 20px; }
-    .stat-card { padding: 14px; }
-    .card { padding: 14px; }
-    .nav-brand { font-size: 15px; padding-right: 10px; margin-right: 6px; }
-    .nav-tab { font-size: 13px; padding: 14px 10px; }
-    .table-header { padding: 12px 14px; }
-    .btn { padding: 10px 14px; font-size: 13px; }
+  @media (max-width: 480px) {
+    /* All multi-column forms collapse to single column */
+    .form-row.cols-2,
+    .form-row.cols-3,
+    .form-row.cols-4 { grid-template-columns: 1fr; }
+    /* All grids collapse to single column */
+    .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 { grid-template-columns: 1fr; }
+    /* Page & card padding */
+    .page { padding: 10px 8px; }
+    .card { padding: 12px; }
+    .stat-card { padding: 12px 10px; }
+    .stat-value { font-size: 22px; }
+    /* Nav — smaller to fit all tabs */
+    .nav-brand { font-size: 13px; padding: 11px 8px 11px 0; margin-right: 4px; }
+    .nav-tab { font-size: 11px; padding: 11px 7px; }
+    /* Buttons */
+    .btn { padding: 9px 12px; font-size: 13px; }
+    .btn-sm { padding: 5px 8px; font-size: 11px; }
+    /* Tables — tighter cells */
+    td { padding: 8px 10px; font-size: 13px; }
+    th { padding: 7px 10px; font-size: 11px; }
+    /* Table header row */
+    .table-header { padding: 10px 12px; }
+    /* Modals — full-width bottom sheet style */
+    .modal-overlay { align-items: flex-end; padding: 0; }
+    .modal { border-radius: 16px 16px 0 0; padding: 20px 16px 28px; max-height: 88vh; overflow-y: auto; max-width: 100%; }
+    /* Misc */
+    .section-title { font-size: 16px; }
+    .upload-zone { padding: 24px 14px; }
+    .empty { padding: 32px 16px; }
+    .section-gap { margin-bottom: 14px; }
   }
 
   .divider { height: 1px; background: var(--border); margin: 20px 0; }
