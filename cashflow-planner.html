@@ -914,6 +914,29 @@
   </div>
 </div>
 
+<!-- BILLS THIS WEEK MODAL -->
+<div class="modal-overlay" id="bills-week-modal">
+  <div class="modal" style="max-width:520px;max-height:80vh;display:flex;flex-direction:column">
+    <h3>Bills Due This Week</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Total due: <strong id="bills-week-modal-total" style="color:var(--text)">$0.00</strong></p>
+    <div id="bills-week-modal-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBillsWeekModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUDGET / SAFE TO SPEND SNAPSHOT MODAL -->
+<div class="modal-overlay" id="budget-snapshot-modal">
+  <div class="modal" style="max-width:600px;max-height:85vh;display:flex;flex-direction:column">
+    <h3>Where You're At</h3>
+    <div id="budget-snapshot-body" style="overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBudgetSnapshotModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT BILL MODAL -->
 <div class="modal-overlay" id="edit-bill-modal">
   <div class="modal">
