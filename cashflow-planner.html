@@ -3274,16 +3274,112 @@ function renderBillListHtml(bills, emptyMsg) {
   }).join('');
 }
 
-// ─── BILLS THIS WEEK MODAL (dashboard popup) ──────────────────────────────────
-function showBillsWeekModal() {
-  const bills = getBillsDueWithin(7);
+// ─── BILLS DUE MODAL (dashboard popup, 7 or 14 day window) ────────────────────
+function showBillsWeekModal(days) {
+  days = days || 7;
+  const bills = getBillsDueWithin(days);
   const total = bills.reduce((s,b) => s + getBillEffectiveAmount(b), 0);
+  document.getElementById('bills-week-modal-title').textContent = days === 14 ? 'Bills Due (Next 14 Days)' : 'Bills Due This Week';
   document.getElementById('bills-week-modal-total').textContent = fmt(total);
-  document.getElementById('bills-week-modal-list').innerHTML = renderBillListHtml(bills, 'No bills due in the next 7 days.');
+  document.getElementById('bills-week-modal-list').innerHTML = renderBillListHtml(bills, `No bills due in the next ${days} days.`);
   document.getElementById('bills-week-modal').classList.add('open');
 }
 function closeBillsWeekModal() {
   document.getElementById('bills-week-modal').classList.remove('open');
+}
+
+// ─── SPENT THIS MONTH MODAL (dashboard popup) ─────────────────────────────────
+function showSpentModal() {
+  const now = new Date();
+  const thisMonth = now.getMonth(), thisYear = now.getFullYear();
+  const creditAccountNames = new Set(state.accounts.filter(a => a.type === 'credit').map(a => a.name));
+  const monthTx = state.transactions.filter(t => {
+    const d = parseLocalDateStr(t.date);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear && t.reviewed !== false;
+  });
+  const spentMonth = monthTx.filter(t =>
+    t.amount < 0 && t.category !== 'Transfer' && !t.isSplitParent && !creditAccountNames.has(t.account)
+  ).reduce((s,t) => s + Math.abs(t.amount), 0);
+  const incomeMonth = monthTx.filter(t => t.amount > 0 && t.category === 'Income').reduce((s,t) => s + t.amount, 0);
+
+  const spendByCat = {};
+  monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer' && t.category !== 'Income' && !t.isSplitParent).forEach(t => {
+    spendByCat[t.category] = (spendByCat[t.category]||0) + Math.abs(t.amount);
+  });
+  const catEntries = Object.entries(spendByCat).sort((a,b) => b[1]-a[1]);
+  const maxVal = catEntries.length ? catEntries[0][1] : 1;
+  const catRows = catEntries.length ? catEntries.map(([cat, amt]) => `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:13px">${catBadge(cat)} ${cat}</span>
+        <span style="font-size:13px;font-weight:600">${fmt(amt)}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${(amt/maxVal*100).toFixed(1)}%;background:${catColor(cat)}"></div></div>
+    </div>`).join('') : '<div class="empty">No spending data yet.</div>';
+
+  document.getElementById('spent-modal-body').innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:14px">
+        <span>Spent this month</span><strong style="color:var(--red)">${fmt(spentMonth)}</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:6px">
+        <span>Income logged this month</span><strong style="color:var(--green)">${fmt(incomeMonth)}</strong>
+      </div>
+    </div>
+    <div class="card-title">By Category</div>
+    ${catRows}
+  `;
+  document.getElementById('spent-modal').classList.add('open');
+}
+function closeSpentModal() {
+  document.getElementById('spent-modal').classList.remove('open');
+}
+
+// ─── TOTAL BALANCE MODAL (dashboard popup) ────────────────────────────────────
+function showBalanceModal() {
+  const nonCredit = state.accounts.filter(a => a.type !== 'credit');
+  const total = nonCredit.reduce((s,a) => s + (a.balance||0), 0);
+  const rows = nonCredit.length ? nonCredit.map(a => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span>${esc(a.name)}</span>
+      <strong>${fmt(a.balance||0)}</strong>
+    </div>`).join('') : '<div class="empty">No accounts set up.</div>';
+  document.getElementById('balance-modal-list').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:15px;margin-bottom:10px">
+      <span>Total</span><strong style="color:#00aaff">${fmt(total)}</strong>
+    </div>
+    ${rows}
+  `;
+  document.getElementById('balance-modal').classList.add('open');
+}
+function closeBalanceModal() {
+  document.getElementById('balance-modal').classList.remove('open');
+}
+
+// ─── CREDIT CARDS MODAL (dashboard popup) ─────────────────────────────────────
+function showCreditModal() {
+  const cards = state.accounts.filter(a => a.type === 'credit' && a.creditLimit);
+  const rows = cards.length ? cards.map(a => {
+    const util = a.creditLimit ? Math.round((a.balance||0) / a.creditLimit * 100) : 0;
+    const color = util > 80 ? 'var(--red)' : util > 50 ? 'var(--yellow)' : 'var(--green)';
+    return `<div class="card" style="padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <strong>${esc(a.name)}</strong>
+        <span style="color:${color};font-weight:600">${util}% used</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(util,100)}%;background:${color}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px">
+        <span>Balance: ${fmt(a.balance||0)}</span>
+        <span>Available: ${fmt(Math.max(0, a.creditLimit - (a.balance||0)))}</span>
+        <span>Limit: ${fmt(a.creditLimit)}</span>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">No credit cards set up.</div>';
+  document.getElementById('credit-modal-list').innerHTML = rows;
+  document.getElementById('credit-modal').classList.add('open');
+}
+function closeCreditModal() {
+  document.getElementById('credit-modal').classList.remove('open');
 }
 
 // ─── BUDGET / SAFE-TO-SPEND SNAPSHOT MODAL (dashboard popup) ──────────────────
