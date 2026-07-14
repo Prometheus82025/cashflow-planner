@@ -2261,7 +2261,10 @@ function parseTransactions(rows) {
     const desc = (row[cols.descCol]||'').trim();
     const amount = parseAmount(row, cols);
     const date = parseDate(row[cols.dateCol]);
-    const cat = amount > 0 ? 'Income' : 'Other';
+    // Keyword-match first (catches Transfers/Venmo/Zelle/refunds etc.);
+    // only fall back to blanket Income/Other if nothing matches.
+    const keywordCat = autoCategory(desc);
+    const cat = keywordCat !== 'Other' ? keywordCat : (amount > 0 ? 'Income' : 'Other');
     return {
       id: Date.now() + Math.random(),
       date: dateToStr(date),
