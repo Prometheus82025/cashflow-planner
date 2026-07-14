@@ -2822,11 +2822,13 @@ function renderTransactions() {
     const mBody = document.getElementById('monthly-summary-body');
     const monthData = {};
     for (const t of state.transactions) {
-      if (!t.date || t.isSplitParent || t.category === 'Transfer') continue;
+      if (!t.date || t.isSplitParent || t.category === 'Transfer' || t.reviewed === false) continue;
       const mo = t.date.substring(0, 7);
       if (!monthData[mo]) monthData[mo] = { income: 0, expenses: 0, count: 0 };
-      if (t.amount > 0) monthData[mo].income += t.amount;
-      else monthData[mo].expenses += Math.abs(t.amount);
+      // Only count transactions actually tagged Income — matches the Dashboard's
+      // "income logged" figure. A positive amount alone (refund/credit) doesn't count.
+      if (t.amount > 0 && t.category === 'Income') monthData[mo].income += t.amount;
+      else if (t.amount < 0) monthData[mo].expenses += Math.abs(t.amount);
       monthData[mo].count++;
     }
 
