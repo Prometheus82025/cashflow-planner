@@ -3203,6 +3203,112 @@ function renderDashboard() {
   }
 }
 
+// Returns unpaid bills due within `days` from today, sorted soonest-first.
+// Mirrors the filtering used for the dashboard's 7-day and 14-day stat cards.
+function getBillsDueWithin(days) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const cutoff = new Date(now); cutoff.setDate(cutoff.getDate() + days);
+  return state.bills.map(b => {
+    const d = nextDueDateForBill(b);
+    return { ...b, nextDate: d, days: daysUntil(d), paid: isBillPaid(b) };
+  }).filter(b => !b.paid && b.nextDate <= cutoff).sort((a,b) => a.nextDate - b.nextDate);
+}
+
+function renderBillListHtml(bills, emptyMsg) {
+  if (!bills.length) return `<div class="empty"><div class="empty-icon">✅</div>${emptyMsg}</div>`;
+  return bills.map(b => {
+    const urgency = b.days <= 3 ? 'badge-red' : b.days <= 7 ? 'badge-yellow' : 'badge-green';
+    const urgencyText = b.days <= 0 ? 'TODAY' : b.days === 1 ? 'Tomorrow' : `${b.days} days`;
+    return `<div class="bill-item">
+      <div>
+        <div class="bill-name">${esc(b.name)}</div>
+        <div class="bill-date">${b.nextDate.toLocaleDateString()} · ${catBadge(b.category)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="bill-amount red">${fmt(getBillEffectiveAmount(b))}</div>
+        <span class="badge ${urgency}">${urgencyText}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── BILLS THIS WEEK MODAL (dashboard popup) ──────────────────────────────────
+function showBillsWeekModal() {
+  const bills = getBillsDueWithin(7);
+  const total = bills.reduce((s,b) => s + getBillEffectiveAmount(b), 0);
+  document.getElementById('bills-week-modal-total').textContent = fmt(total);
+  document.getElementById('bills-week-modal-list').innerHTML = renderBillListHtml(bills, 'No bills due in the next 7 days.');
+  document.getElementById('bills-week-modal').classList.add('open');
+}
+function closeBillsWeekModal() {
+  document.getElementById('bills-week-modal').classList.remove('open');
+}
+
+// ─── BUDGET / SAFE-TO-SPEND SNAPSHOT MODAL (dashboard popup) ──────────────────
+function showBudgetSnapshotModal() {
+  const now = new Date();
+  const totalBalance = state.accounts.reduce((s, a) => a.type !== 'credit' ? s + a.balance : s, 0);
+  const buffer = state.settings.buffer || 200;
+
+  const bills7 = getBillsDueWithin(7);
+  const bills7Total = bills7.reduce((s,b) => s + getBillEffectiveAmount(b), 0);
+  const safeSpendRaw = totalBalance - bills7Total - buffer;
+
+  const bills14 = getBillsDueWithin(14);
+  const bills14Total = bills14.reduce((s,b) => s + getBillEffectiveAmount(b), 0);
+
+  // Budget breakdown — same "spent this month" logic as renderBudgets()
+  const monthTx = state.transactions.filter(t => {
+    const d = parseLocalDateStr(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const spendByCat = {};
+  monthTx.filter(t => t.amount < 0 && t.category !== 'Transfer' && !t.isSplitParent).forEach(t => {
+    spendByCat[t.category] = (spendByCat[t.category]||0) + Math.abs(t.amount);
+  });
+  if ('Credit Cards' in state.budgets) {
+    spendByCat['Credit Cards'] = state.accounts
+      .filter(a => a.type === 'credit')
+      .reduce((s, a) => s + Math.abs(a.balance || 0), 0);
+  }
+  const budgetRows = Object.entries(state.budgets || {}).filter(([,limit]) => limit).map(([cat, limit]) => {
+    const spent = spendByCat[cat] || 0;
+    const pct = Math.min(Math.round((spent / limit) * 100), 999);
+    const color = pct >= 100 ? 'var(--red)' : pct >= 75 ? 'var(--yellow)' : 'var(--green)';
+    return `<div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0">
+      <span style="flex:1">${catBadge(cat)} ${cat}</span>
+      <span style="color:var(--muted)">${fmt(spent)} / ${fmt(limit)}</span>
+      <span style="color:${color};width:40px;text-align:right;font-weight:600">${pct}%</span>
+    </div>`;
+  }).join('') || '<div class="empty" style="padding:8px 0">No budgets set yet.</div>';
+
+  const safeColor = safeSpendRaw < 0 ? 'var(--red)' : safeSpendRaw < buffer ? 'var(--yellow)' : 'var(--green)';
+
+  document.getElementById('budget-snapshot-body').innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title" style="margin-top:0">Safe to Spend</div>
+      <div style="font-size:26px;font-weight:700;color:${safeColor};margin-bottom:6px">${fmt(Math.max(0, safeSpendRaw))}</div>
+      <div style="font-size:12px;color:var(--muted)">
+        ${fmt(totalBalance)} balance − ${fmt(bills7Total)} bills due in 7 days − ${fmt(buffer)} buffer
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title" style="margin-top:0">Budgets This Month</div>
+      ${budgetRows}
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-top:0">Bills Due (Next 14 Days) — ${fmt(bills14Total)} total</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${renderBillListHtml(bills14, 'No bills due in the next 14 days.')}
+      </div>
+    </div>
+  `;
+  document.getElementById('budget-snapshot-modal').classList.add('open');
+}
+function closeBudgetSnapshotModal() {
+  document.getElementById('budget-snapshot-modal').classList.remove('open');
+}
+
 // ─── FORECAST ─────────────────────────────────────────────────────────────────
 function generateForecastEvents() {
   const events = [];
