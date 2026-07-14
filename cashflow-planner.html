@@ -1326,8 +1326,12 @@ function addManualTransaction() {
     reviewed: false
   });
 
+  // Manual entries aren't from a bank feed, so book them against the account now.
+  if (acct) acct.balance = Math.round(((acct.balance || 0) + amount) * 100) / 100;
+
   save();
   renderTransactions();
+  renderAccounts();
   renderDashboard();
 
   // Clear form
