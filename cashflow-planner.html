@@ -226,17 +226,17 @@
       <div class="stat-value" style="color:#00aaff" id="dash-balance">$0.00</div>
       <div class="stat-sub" id="dash-accounts-count">across 0 accounts</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="showBillsWeekModal()" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Bills This Week</div>
       <div class="stat-value red" id="dash-need-week">$0.00</div>
       <div class="stat-sub" id="dash-need-week-by">by —</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="showBudgetSnapshotModal()" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Budget This Week</div>
       <div class="stat-value" style="color:var(--yellow)" id="dash-budget-week">$0.00</div>
       <div class="stat-sub" id="dash-budget-week-sub">from monthly budgets</div>
     </div>
-    <div class="stat-card" id="safe-spend-card">
+    <div class="stat-card" id="safe-spend-card" onclick="showBudgetSnapshotModal()" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Safe to Spend</div>
       <div class="stat-value" id="dash-safe-spend">$0.00</div>
       <div class="stat-sub" id="dash-safe-sub"></div>
