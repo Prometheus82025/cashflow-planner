@@ -914,14 +914,47 @@
   </div>
 </div>
 
-<!-- BILLS THIS WEEK MODAL -->
+<!-- BILLS DUE MODAL (7 or 14 day window) -->
 <div class="modal-overlay" id="bills-week-modal">
   <div class="modal" style="max-width:520px;max-height:80vh;display:flex;flex-direction:column">
-    <h3>Bills Due This Week</h3>
+    <h3 id="bills-week-modal-title">Bills Due This Week</h3>
     <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Total due: <strong id="bills-week-modal-total" style="color:var(--text)">$0.00</strong></p>
     <div id="bills-week-modal-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeBillsWeekModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPENT THIS MONTH MODAL -->
+<div class="modal-overlay" id="spent-modal">
+  <div class="modal" style="max-width:520px;max-height:80vh;display:flex;flex-direction:column">
+    <h3>Spent This Month</h3>
+    <div id="spent-modal-body" style="overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSpentModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOTAL BALANCE MODAL -->
+<div class="modal-overlay" id="balance-modal">
+  <div class="modal" style="max-width:460px;max-height:80vh;display:flex;flex-direction:column">
+    <h3>Account Balances</h3>
+    <div id="balance-modal-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBalanceModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREDIT CARDS MODAL -->
+<div class="modal-overlay" id="credit-modal">
+  <div class="modal" style="max-width:520px;max-height:80vh;display:flex;flex-direction:column">
+    <h3>Credit Cards</h3>
+    <div id="credit-modal-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCreditModal()">Close</button>
     </div>
   </div>
 </div>
