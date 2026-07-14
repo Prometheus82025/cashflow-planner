@@ -242,12 +242,12 @@
       <div class="stat-sub" id="dash-safe-sub"></div>
       <div id="dash-safe-warning" style="margin-top:8px;font-size:12px"></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="showBillsWeekModal(14)" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Bills Due (14d)</div>
       <div class="stat-value" style="color:#ff4500" id="dash-bills-due">$0.00</div>
       <div class="stat-sub" id="dash-bills-count">0 bills upcoming</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="showSpentModal()" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Spent This Month</div>
       <div class="stat-value" id="dash-spent">$0.00</div>
       <div class="stat-sub" id="dash-income-month">$0 income logged</div>
@@ -255,17 +255,17 @@
   </div>
 
   <div class="grid-3 section-gap" id="dash-credit-row" style="display:none">
-    <div class="stat-card">
+    <div class="stat-card" onclick="showCreditModal()" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Total Credit Available</div>
       <div class="stat-value" style="color:#a855f7" id="dash-credit-available">$0.00</div>
       <div class="stat-sub" id="dash-credit-sub">across 0 credit cards</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="showCreditModal()" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Total Credit Used</div>
       <div class="stat-value" style="color:#ff4500" id="dash-credit-used">$0.00</div>
       <div class="stat-sub" id="dash-credit-util">0% utilization</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="showCreditModal()" style="cursor:pointer" title="Click for details">
       <div class="stat-label">Total Credit Limit</div>
       <div class="stat-value" style="color:var(--muted)" id="dash-credit-limit">$0.00</div>
       <div class="stat-sub">combined limit</div>
